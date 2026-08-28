@@ -137,9 +137,9 @@ export const PorscheScene: React.FC = () => {
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 600;
 
-    // 1. Scene
+    // 1. High-Contrast Luxury Automotive Studio Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xfbfbfc);
+    scene.background = new THREE.Color(0x0a0d14);
     sceneRef.current = scene;
 
     // 2. Camera
@@ -156,7 +156,7 @@ export const PorscheScene: React.FC = () => {
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
@@ -168,11 +168,12 @@ export const PorscheScene: React.FC = () => {
     const roomEnv = new RoomEnvironment();
     scene.environment = pmremGenerator.fromScene(roomEnv).texture;
 
-    // 5. Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    // 5. High-Impact Automotive Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
-    const mainSoftbox = new THREE.DirectionalLight('#ffffff', 2.8);
+    // Main Overhead Softbox (Highlights Hood & Rooflines)
+    const mainSoftbox = new THREE.DirectionalLight('#ffffff', 3.4);
     mainSoftbox.position.set(6, 12, 8);
     mainSoftbox.castShadow = true;
     mainSoftbox.shadow.mapSize.width = 2048;
@@ -180,26 +181,72 @@ export const PorscheScene: React.FC = () => {
     mainSoftbox.shadow.bias = -0.0001;
     scene.add(mainSoftbox);
 
-    const studioFillLeft = new THREE.DirectionalLight('#f8fafc', 1.4);
-    studioFillLeft.position.set(-6, 4, 3);
-    scene.add(studioFillLeft);
+    // Rim Backlight (Traces iconic 911 flyline and wide rear hips)
+    const rimLight = new THREE.DirectionalLight('#93c5fd', 2.8);
+    rimLight.position.set(-8, 9, -7);
+    scene.add(rimLight);
 
-    const studioFillRight = new THREE.DirectionalLight('#ffffff', 1.4);
-    studioFillRight.position.set(6, 4, -3);
-    scene.add(studioFillRight);
+    // Side Fill Light (Illuminates Door Panels and Decals)
+    const sideFill = new THREE.DirectionalLight('#f8fafc', 1.8);
+    sideFill.position.set(7, 5, -4);
+    scene.add(sideFill);
 
-    // 6. Seamless Pure White Gallery Floor
-    const floorGeo = new THREE.PlaneGeometry(50, 50);
+    // Front Nose Accent Light
+    const frontAccent = new THREE.DirectionalLight('#ffffff', 1.6);
+    frontAccent.position.set(0, 3, 7);
+    scene.add(frontAccent);
+
+    // 6. Realistic Ambient Occlusion Ground Contact Shadow under Porsche
+    const shadowCanvas = document.createElement('canvas');
+    shadowCanvas.width = 512;
+    shadowCanvas.height = 512;
+    const ctx = shadowCanvas.getContext('2d')!;
+    const radGrad = ctx.createRadialGradient(256, 256, 30, 256, 256, 240);
+    radGrad.addColorStop(0, 'rgba(0, 0, 0, 0.95)');
+    radGrad.addColorStop(0.35, 'rgba(0, 0, 0, 0.70)');
+    radGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.25)');
+    radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const shadowGeo = new THREE.PlaneGeometry(6.0, 3.4);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: shadowTex,
+      transparent: true,
+      opacity: 0.90,
+      depthWrite: false,
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.005;
+    scene.add(shadowMesh);
+
+    // 7. Polished Studio Floor with Soft Gloss Reflections
+    const floorGeo = new THREE.PlaneGeometry(60, 60);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0xf8f9fa,
-      roughness: 0.2,
-      metalness: 0.05,
+      color: 0x0e131d,
+      roughness: 0.28,
+      metalness: 0.35,
     });
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.position.y = -0.002;
     floorMesh.receiveShadow = true;
     scene.add(floorMesh);
+
+    // Subtle Studio Pedestal Perimeter Ring
+    const ringGeo = new THREE.RingGeometry(3.6, 3.63, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.DoubleSide,
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.y = 0.004;
+    scene.add(ringMesh);
 
     // Decals container group
     const decalsGroup = new THREE.Group();
@@ -591,7 +638,7 @@ export const PorscheScene: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-[65vh] sm:h-[75vh] md:h-[82vh] bg-gradient-to-b from-[#fbfbfc] via-[#f1f3f6] to-[#e2e8f0] flex items-center justify-center overflow-hidden select-none">
+    <div className="relative w-full h-[65vh] sm:h-[75vh] md:h-[82vh] bg-[#0a0d14] flex items-center justify-center overflow-hidden select-none">
       
       {/* 3D Canvas Viewport */}
       <div
@@ -605,14 +652,14 @@ export const PorscheScene: React.FC = () => {
 
       {/* Loading Overlay */}
       {isLoadingModel && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-md">
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#0a0d14]/90 backdrop-blur-md">
           <div className="relative mb-4">
-            <Loader2 className="w-10 h-10 animate-spin text-neutral-900" />
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold font-mono">
+            <Loader2 className="w-10 h-10 animate-spin text-sky-400" />
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold font-mono text-white">
               911
             </div>
           </div>
-          <span className="text-xs font-mono font-medium text-neutral-700 tracking-wider">
+          <span className="text-xs font-mono font-medium text-neutral-300 tracking-wider">
             Cargando Porsche 911 (992)...
           </span>
         </div>
@@ -620,7 +667,7 @@ export const PorscheScene: React.FC = () => {
 
       {/* Placement Mode Top Instruction Banner */}
       {isPlacementMode && (
-        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-30 bg-neutral-900 text-white px-4 py-2 rounded-full shadow-xl border border-white/20 text-xs font-mono flex items-center gap-2 animate-bounce">
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-30 bg-neutral-900/95 text-white px-4 py-2 rounded-full shadow-2xl border border-sky-400/40 text-xs font-mono flex items-center gap-2 animate-bounce backdrop-blur-md">
           <MousePointerClick className="w-4 h-4 text-emerald-400" />
           <span>Haz clic en la carrocería del Porsche para fijar tu sticker</span>
         </div>
@@ -632,27 +679,27 @@ export const PorscheScene: React.FC = () => {
           className="absolute z-30 pointer-events-none transform -translate-x-1/2 -translate-y-full transition-all duration-150 ease-out"
           style={{ left: activeTooltip.screenX, top: activeTooltip.screenY - 14 }}
         >
-          <div className="bg-white/95 backdrop-blur-xl rounded-xl px-4 py-3 shadow-xl border border-black/10 text-neutral-900 min-w-[200px]">
+          <div className="bg-neutral-900/95 backdrop-blur-xl rounded-xl px-4 py-3 shadow-2xl border border-white/15 text-white min-w-[200px]">
             <div className="flex items-center justify-between gap-2 mb-0.5">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-sky-400">
                 {activeTooltip.sponsor.zoneName}
               </span>
-              <span className="text-[9px] font-mono text-emerald-600 font-semibold">
+              <span className="text-[9px] font-mono text-emerald-400 font-semibold">
                 2 Años
               </span>
             </div>
 
-            <div className="font-sans font-semibold text-xs text-neutral-900">
+            <div className="font-sans font-bold text-xs text-white">
               {activeTooltip.sponsor.brandName}
             </div>
 
-            <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-black/5 text-[10px] font-mono">
-              <span className="text-neutral-500">{activeTooltip.sponsor.areaCm2} cm²</span>
-              <span className="text-neutral-900 font-semibold">${activeTooltip.sponsor.totalPriceMxn.toLocaleString()} MXN</span>
+            <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-white/10 text-[10px] font-mono">
+              <span className="text-neutral-400">{activeTooltip.sponsor.areaCm2} cm²</span>
+              <span className="text-white font-semibold">${activeTooltip.sponsor.totalPriceMxn.toLocaleString()} MXN</span>
             </div>
 
             {activeTooltip.sponsor.targetUrl && (
-              <div className="pt-1.5 mt-1 border-t border-black/5 flex items-center justify-between text-[9px] font-mono text-sky-600 font-semibold">
+              <div className="pt-1.5 mt-1 border-t border-white/10 flex items-center justify-between text-[9px] font-mono text-sky-400 font-semibold">
                 <span className="truncate max-w-[130px]">{activeTooltip.sponsor.targetUrl.replace(/^https?:\/\//, '')}</span>
                 <span className="text-neutral-400">Clic para abrir ↗</span>
               </div>
@@ -668,16 +715,16 @@ export const PorscheScene: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsPlacementMode(true)}
-            className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-neutral-800 px-3.5 py-2 rounded-full text-xs font-medium border border-black/10 shadow-sm transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-full text-xs font-medium border border-white/15 backdrop-blur-md shadow-lg transition cursor-pointer"
           >
-            <MousePointerClick className="w-3.5 h-3.5" />
+            <MousePointerClick className="w-3.5 h-3.5 text-sky-400" />
             <span className="hidden sm:inline">Colocar en 3D</span>
             <span className="sm:hidden">Colocar</span>
           </button>
 
           <button
             onClick={() => setIsBuyModalOpen(true)}
-            className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-md transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg shadow-sky-500/25 transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Comprar Espacio · Personalizar Logo</span>
@@ -685,23 +732,23 @@ export const PorscheScene: React.FC = () => {
         </div>
 
         {/* Row 2: Camera Presets & 360 View */}
-        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-xl px-2 py-1.5 rounded-full border border-black/10 shadow-md max-w-full overflow-x-auto">
+        <div className="flex items-center gap-1 bg-neutral-900/90 backdrop-blur-xl px-2 py-1.5 rounded-full border border-white/15 shadow-2xl max-w-full overflow-x-auto text-white">
           <button
             onClick={() => setAutoRotate(!autoRotate)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              autoRotate ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:text-neutral-900'
+              autoRotate ? 'bg-sky-500 text-white font-bold' : 'text-neutral-300 hover:text-white'
             }`}
           >
             <RotateCw className={`w-3 h-3 ${autoRotate ? 'animate-spin' : ''}`} />
             <span>360°</span>
           </button>
 
-          <div className="h-3 w-px bg-black/10 mx-1 shrink-0" />
+          <div className="h-3 w-px bg-white/15 mx-1 shrink-0" />
 
           <button
             onClick={() => setCameraPreset('overview')}
             className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'overview' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:text-neutral-900'
+              cameraPreset === 'overview' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
             }`}
           >
             General
@@ -710,7 +757,7 @@ export const PorscheScene: React.FC = () => {
           <button
             onClick={() => setCameraPreset('hood')}
             className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'hood' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:text-neutral-900'
+              cameraPreset === 'hood' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
             }`}
           >
             Cofre
@@ -719,7 +766,7 @@ export const PorscheScene: React.FC = () => {
           <button
             onClick={() => setCameraPreset('door_right')}
             className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'door_right' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:text-neutral-900'
+              cameraPreset === 'door_right' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
             }`}
           >
             Lateral
@@ -728,13 +775,13 @@ export const PorscheScene: React.FC = () => {
           <button
             onClick={() => setCameraPreset('wing')}
             className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'wing' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:text-neutral-900'
+              cameraPreset === 'wing' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
             }`}
           >
             Trasera
           </button>
 
-          <div className="h-3 w-px bg-black/10 mx-1 shrink-0" />
+          <div className="h-3 w-px bg-white/15 mx-1 shrink-0" />
 
           {/* Quick Zoom Buttons */}
           <button
@@ -749,7 +796,7 @@ export const PorscheScene: React.FC = () => {
                 );
               }
             }}
-            className="p-1 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-black/5 transition cursor-pointer"
+            className="p-1 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
             title="Zoom +"
           >
             <ZoomIn className="w-3.5 h-3.5" />
@@ -767,7 +814,7 @@ export const PorscheScene: React.FC = () => {
                 );
               }
             }}
-            className="p-1 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-black/5 transition cursor-pointer"
+            className="p-1 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
             title="Zoom -"
           >
             <ZoomOut className="w-3.5 h-3.5" />

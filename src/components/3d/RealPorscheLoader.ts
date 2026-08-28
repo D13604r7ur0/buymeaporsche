@@ -33,12 +33,12 @@ export const loadRealPorscheModel = (
         // Solid Premium Automotive Paint Body (Gloss White / Studio Showroom)
         const solidBodyMaterial = new THREE.MeshPhysicalMaterial({
           color: new THREE.Color(carConfig?.bodyColor || '#f8fafc'),
-          metalness: 0.15,
-          roughness: 0.18,
+          metalness: 0.12,
+          roughness: 0.14,
           clearcoat: 1.0,
-          clearcoatRoughness: 0.05,
-          reflectivity: 0.9,
-          envMapIntensity: 1.8,
+          clearcoatRoughness: 0.03,
+          reflectivity: 0.95,
+          envMapIntensity: 2.2,
           side: THREE.FrontSide,
         });
 
@@ -89,8 +89,8 @@ export const loadRealPorscheModel = (
         carRoot.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
-            mesh.castShadow = false; // No heavy shadow to maintain pure crystal look
-            mesh.receiveShadow = false;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
 
             const name = mesh.name.toLowerCase();
             const matName = (Array.isArray(mesh.material) ? mesh.material[0]?.name : mesh.material?.name)?.toLowerCase() || '';
