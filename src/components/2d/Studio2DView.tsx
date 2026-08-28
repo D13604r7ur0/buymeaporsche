@@ -85,21 +85,21 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
         rot3D = [0.15, 0, 0];
         detectedTier = 'rear_decklid';
         detectedZoneName = 'Tapa de Motor & Fascia Trasera';
-        detectedPrice = 25;
+        detectedPrice = 40;
       } else if (normY < 60) {
         // Techo Panorámico
         pos3D = [relX * 0.5, 1.34, -0.1 + ((normY - 45) / 15) * 0.3];
         rot3D = [-Math.PI / 2, 0, 0];
         detectedTier = 'body_standard';
         detectedZoneName = 'Techo Panorámico';
-        detectedPrice = 15;
+        detectedPrice = 25;
       } else {
         // Cofre Central Frontal
         pos3D = [relX * 0.65, 0.96, 0.75 + ((normY - 60) / 40) * 0.5];
         rot3D = [-1.25, 0, 0];
         detectedTier = 'hood_central';
         detectedZoneName = 'Cofre Central Frontal';
-        detectedPrice = 20;
+        detectedPrice = 35;
       }
     } else if (section === 'left') {
       // Left Door & Fender (X: 0% front, 100% rear)
@@ -108,7 +108,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
       rot3D = [0, -Math.PI / 2, 0];
       detectedTier = 'premium_door';
       detectedZoneName = 'Puerta / Costado Izquierdo';
-      detectedPrice = 15;
+      detectedPrice = 25;
     } else if (section === 'right') {
       // Right Door & Fender (X: 0% rear, 100% front)
       const relZ = ((normX - 50) / 50) * 1.5;
@@ -116,14 +116,14 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
       rot3D = [0, Math.PI / 2, 0];
       detectedTier = 'premium_door';
       detectedZoneName = 'Puerta / Costado Derecho';
-      detectedPrice = 15;
+      detectedPrice = 25;
     } else if (section === 'rear') {
       // Rear bumper
       pos3D = [relX * 0.7, 0.45 + ((50 - normY) / 50) * 0.3, -1.9];
       rot3D = [0, Math.PI, 0];
       detectedTier = 'body_standard';
       detectedZoneName = 'Defensa Trasera';
-      detectedPrice = 10;
+      detectedPrice = 15;
     }
 
     onUpdateDraftPosition({
@@ -268,7 +268,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
             
             {/* Rear Decklid Section */}
             <div className="w-full h-16 rounded-2xl border-2 border-dashed border-amber-400/50 bg-amber-400/10 flex flex-col items-center justify-center relative">
-              <span className="text-[10px] font-mono font-bold text-amber-300">🏁 TAPA DE MOTOR TRASERA ($25 MXN/cm²)</span>
+              <span className="text-[10px] font-mono font-bold text-amber-300">🏁 TAPA DE MOTOR TRASERA ($40 MXN/cm²)</span>
               <span className="text-[9px] font-mono text-neutral-400">Rejilla y perfil trasero 992</span>
             </div>
 
@@ -279,7 +279,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
 
             {/* Panoramic Roof Section */}
             <div className="w-56 h-24 rounded-2xl border-2 border-dashed border-sky-400/40 bg-sky-400/10 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-mono font-bold text-sky-300">🔲 TECHO PANORÁMICO ($15 MXN/cm²)</span>
+              <span className="text-[10px] font-mono font-bold text-sky-300">🔲 TECHO PANORÁMICO ($25 MXN/cm²)</span>
               <span className="text-[9px] font-mono text-neutral-400">Superficie central superior</span>
             </div>
 
@@ -290,7 +290,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
 
             {/* Central Hood Section */}
             <div className="w-full h-28 rounded-3xl border-2 border-dashed border-emerald-400/50 bg-emerald-400/10 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-mono font-bold text-emerald-300">🔰 COFRE CENTRAL ($20 MXN/cm²)</span>
+              <span className="text-[10px] font-mono font-bold text-emerald-300">🔰 COFRE CENTRAL ($35 MXN/cm²)</span>
               <span className="text-[9px] font-mono text-neutral-400">Impacto frontal directo</span>
             </div>
 
@@ -309,7 +309,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
             {/* Door & Side Body VIP Area */}
             <div className="flex-1 h-44 mx-3 rounded-2xl border-2 border-dashed border-sky-400/60 bg-sky-400/10 flex flex-col items-center justify-center text-center p-3">
               <span className="text-xs font-mono font-bold text-sky-300">
-                🚪 {activeSection === 'left' ? 'PUERTA IZQUIERDA' : 'PUERTA DERECHA'} ($15 MXN/cm²)
+                🚪 {activeSection === 'left' ? 'PUERTA IZQUIERDA' : 'PUERTA DERECHA'} ($25 MXN/cm²)
               </span>
               <span className="text-[10px] font-mono text-neutral-400 mt-1">
                 Gran visibilidad en laterales y eventos en vivo
@@ -330,7 +330,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
             
             {/* Spoiler Top */}
             <div className="w-full h-16 rounded-xl border-2 border-dashed border-amber-400/50 bg-amber-400/10 flex items-center justify-center">
-              <span className="text-[10px] font-mono font-bold text-amber-300">🏁 ALERÓN TRASERO VIP ($25 MXN/cm²)</span>
+              <span className="text-[10px] font-mono font-bold text-amber-300">🏁 TAPA DE MOTOR TRASERA ($40 MXN/cm²)</span>
             </div>
 
             {/* LED Light Strip (Protected / Excluded) */}
@@ -340,7 +340,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
 
             {/* Rear Bumper Section */}
             <div className="w-full h-24 rounded-2xl border-2 border-dashed border-sky-400/40 bg-sky-400/10 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-mono font-bold text-sky-300">🏎️ DEFENSA TRASERA ($10 MXN/cm²)</span>
+              <span className="text-[10px] font-mono font-bold text-sky-300">🏎️ DEFENSA TRASERA ($15 MXN/cm²)</span>
               <span className="text-[9px] font-mono text-neutral-400">Difusor y fascia</span>
             </div>
 

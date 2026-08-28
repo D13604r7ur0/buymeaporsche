@@ -326,49 +326,49 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       // Automatic Zone & Price Detection based on 3D Coordinates
       let detectedTier: SponsorTier = 'hood_central';
       let detectedZoneName = 'Cofre Central Frontal';
-      let detectedPrice = 20;
+      let detectedPrice = 35;
 
       // Rear Decklid & Engine Cover (Tapa de Motor Trasera)
       if (pos3D[2] < -1.05 && pos3D[1] > 0.75) {
         detectedTier = 'rear_decklid';
         detectedZoneName = 'Tapa de Motor & Fascia Trasera';
-        detectedPrice = 25;
+        detectedPrice = 40;
       }
       // Hood (Cofre)
       else if (pos3D[2] > 0.65) {
         detectedTier = 'hood_central';
         detectedZoneName = 'Cofre Central Frontal';
-        detectedPrice = 20;
+        detectedPrice = 35;
       }
       // Right Door (Puerta Derecha)
       else if (pos3D[0] > 0.55) {
         detectedTier = 'premium_door';
         detectedZoneName = 'Puerta / Costado Derecho';
-        detectedPrice = 15;
+        detectedPrice = 25;
       }
       // Left Door (Puerta Izquierda)
       else if (pos3D[0] < -0.55) {
         detectedTier = 'premium_door';
         detectedZoneName = 'Puerta / Costado Izquierdo';
-        detectedPrice = 15;
+        detectedPrice = 25;
       }
       // Roof (Techo)
       else if (pos3D[1] > 1.22) {
         detectedTier = 'body_standard';
         detectedZoneName = 'Techo Panorámico';
-        detectedPrice = 15;
+        detectedPrice = 25;
       }
       // Rear bumper
       else if (pos3D[2] < -1.4) {
         detectedTier = 'body_standard';
         detectedZoneName = 'Defensa Trasera';
-        detectedPrice = 10;
+        detectedPrice = 15;
       }
       // Standard Body / Bumpers
       else {
         detectedTier = 'body_standard';
         detectedZoneName = 'Carrocería Lateral';
-        detectedPrice = 10;
+        detectedPrice = 20;
       }
 
       setActiveZoneName(detectedZoneName);
@@ -801,7 +801,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
               rotation3D: [0, -Math.PI / 2, 0],
               tier: 'premium_door',
               zoneName: 'Puerta Izquierda',
-              pricePerCm2: 15,
+              pricePerCm2: 25,
             });
             setActiveZoneName('Puerta Izquierda');
           }}
@@ -818,7 +818,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
               rotation3D: [0, Math.PI / 2, 0],
               tier: 'premium_door',
               zoneName: 'Puerta Derecha',
-              pricePerCm2: 15,
+              pricePerCm2: 25,
             });
             setActiveZoneName('Puerta Derecha');
           }}
@@ -835,7 +835,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
               rotation3D: [-Math.PI / 2, 0, 0],
               tier: 'body_standard',
               zoneName: 'Techo Panorámico',
-              pricePerCm2: 15,
+              pricePerCm2: 25,
             });
             setActiveZoneName('Techo Panorámico');
           }}

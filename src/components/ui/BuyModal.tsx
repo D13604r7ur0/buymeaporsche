@@ -82,8 +82,7 @@ export const BuyModal: React.FC = () => {
   const [currentRotation3D, setCurrentRotation3D] = useState<[number, number, number]>(
     draftSponsor?.rotation3D || [-1.25, 0, 0]
   );
-  const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');
-  const [pricePerCm2, setPricePerCm2] = useState<number>(20);
+  const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');  const [pricePerCm2, setPricePerCm2] = useState<number>(35);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -291,7 +290,7 @@ export const BuyModal: React.FC = () => {
         includesPhysicalVinylWrap: true,
         includesTrackDaysExhibition: true,
         includesSocialMediaTags: true,
-        vipTrackPassesCount: selectedTier === 'vip_wing' ? 4 : selectedTier === 'hood_central' ? 3 : 2,
+        vipTrackPassesCount: selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 4 : selectedTier === 'hood_central' ? 3 : 2,
       });
 
       setIsProcessing(false);
@@ -818,8 +817,6 @@ export const BuyModal: React.FC = () => {
                   </div>
                 </div>
 
-
-
                 {/* Opacity Slider */}
                 <div className="space-y-1 pt-1">
                   <div className="flex justify-between text-[11px] font-mono">
@@ -859,14 +856,14 @@ export const BuyModal: React.FC = () => {
                       setCurrentRotation3D([-1.25, 0, 0]);
                       setSelectedTier('hood_central');
                       setCurrentZoneName('Cofre Central Frontal');
-                      setPricePerCm2(20);
+                      setPricePerCm2(35);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'hood_central' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🔰 Cofre</div>
-                    <div className={`text-[10px] ${selectedTier === 'hood_central' ? 'text-neutral-400' : 'text-neutral-500'}`}>$20 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'hood_central' ? 'text-neutral-400' : 'text-neutral-500'}`}>$35 MXN/cm²</div>
                   </button>
 
                   <button
@@ -878,14 +875,14 @@ export const BuyModal: React.FC = () => {
                       setCurrentRotation3D([0.15, 0, 0]);
                       setSelectedTier('rear_decklid');
                       setCurrentZoneName('Tapa de Motor & Fascia Trasera');
-                      setPricePerCm2(25);
+                      setPricePerCm2(40);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🏁 Tapa Trasera</div>
-                    <div className={`text-[10px] ${selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>$40 MXN/cm²</div>
                   </button>
 
                   <button
@@ -897,14 +894,14 @@ export const BuyModal: React.FC = () => {
                       setCurrentRotation3D([0, -Math.PI / 2, 0]);
                       setSelectedTier('premium_door');
                       setCurrentZoneName('Puerta Izquierda');
-                      setPricePerCm2(15);
+                      setPricePerCm2(25);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🚪 Puerta Izq</div>
-                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
                   </button>
 
                   <button
@@ -916,14 +913,14 @@ export const BuyModal: React.FC = () => {
                       setCurrentRotation3D([0, Math.PI / 2, 0]);
                       setSelectedTier('premium_door');
                       setCurrentZoneName('Puerta Derecha');
-                      setPricePerCm2(15);
+                      setPricePerCm2(25);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🚪 Puerta Der</div>
-                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
                   </button>
 
                   <button
@@ -935,14 +932,14 @@ export const BuyModal: React.FC = () => {
                       setCurrentRotation3D([-Math.PI / 2, 0, 0]);
                       setSelectedTier('body_standard');
                       setCurrentZoneName('Techo Panorámico');
-                      setPricePerCm2(15);
+                      setPricePerCm2(25);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       currentZoneName.includes('Techo') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🔲 Techo</div>
-                    <div className={`text-[10px] ${currentZoneName.includes('Techo') ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    <div className={`text-[10px] ${currentZoneName.includes('Techo') ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
                   </button>
 
                   <button
@@ -954,14 +951,14 @@ export const BuyModal: React.FC = () => {
                       setCurrentRotation3D([0, Math.PI, 0]);
                       setSelectedTier('body_standard');
                       setCurrentZoneName('Defensa Trasera');
-                      setPricePerCm2(10);
+                      setPricePerCm2(15);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       currentZoneName.includes('Defensa') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🏎️ Trasera</div>
-                    <div className={`text-[10px] ${currentZoneName.includes('Defensa') ? 'text-neutral-400' : 'text-neutral-500'}`}>$10 MXN/cm²</div>
+                    <div className={`text-[10px] ${currentZoneName.includes('Defensa') ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
                   </button>
                 </div>
               </div>
