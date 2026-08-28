@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { loadRealPorscheModel } from './RealPorscheLoader';
 import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
-import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw } from 'lucide-react';
+import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw, Play, Pause } from 'lucide-react';
 
 const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
   const n = mesh.name.toLowerCase();
@@ -83,6 +84,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central Frontal');
   const [internalMode, setInternalMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
+  const [isAutoRotating, setIsAutoRotating] = useState<boolean>(false);
 
   const interactMode = externalInteractMode || internalMode;
   const setInteractMode = (mode: 'moveLogo' | 'orbitCamera') => {
@@ -100,62 +102,52 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const carGroupRef = useRef<THREE.Group | null>(null);
   const paintMeshesRef = useRef<THREE.Mesh[]>([]);
   const draftDecalGroupRef = useRef<THREE.Group | null>(null);
   const existingDecalsGroupRef = useRef<THREE.Group | null>(null);
 
-  // Dragging & Interaction State
+  // Interaction State
   const isPointerDownRef = useRef<boolean>(false);
-  const previousMousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  
-  const cameraSphericalRef = useRef<{ radius: number; theta: number; phi: number }>({
-    radius: 6.2,
-    theta: Math.PI / 4,
-    phi: Math.PI / 3,
-  });
-  const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3(4.2, 2.8, 4.5));
-  const currentLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.45, 0));
+
+  // Smooth camera position interpolator
+  const targetCamPosRef = useRef<THREE.Vector3>(new THREE.Vector3(3.8, 2.2, 4.0));
   const targetLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.45, 0));
+  const isTransitioningRef = useRef<boolean>(false);
 
   // Camera presets
   const setStudioCamera = useCallback((view: 'general' | 'hood' | 'wing' | 'leftDoor' | 'rightDoor' | 'roof' | 'rear') => {
+    isTransitioningRef.current = true;
     switch (view) {
       case 'hood':
-        targetCameraPosRef.current.set(0, 2.4, 3.6);
+        targetCamPosRef.current.set(0, 2.2, 3.4);
         targetLookAtRef.current.set(0, 0.65, 1.1);
-        cameraSphericalRef.current = { radius: 3.8, theta: 0, phi: 0.75 };
         break;
       case 'wing':
-        targetCameraPosRef.current.set(0, 2.2, -3.8);
+        targetCamPosRef.current.set(0, 2.0, -3.6);
         targetLookAtRef.current.set(0, 0.85, -1.4);
-        cameraSphericalRef.current = { radius: 4.0, theta: Math.PI, phi: 0.85 };
         break;
       case 'leftDoor':
-        targetCameraPosRef.current.set(-4.2, 1.4, 0);
+        targetCamPosRef.current.set(-4.0, 1.3, 0);
         targetLookAtRef.current.set(0, 0.55, 0);
-        cameraSphericalRef.current = { radius: 4.2, theta: -Math.PI / 2, phi: 1.25 };
         break;
       case 'rightDoor':
-        targetCameraPosRef.current.set(4.2, 1.4, 0);
+        targetCamPosRef.current.set(4.0, 1.3, 0);
         targetLookAtRef.current.set(0, 0.55, 0);
-        cameraSphericalRef.current = { radius: 4.2, theta: Math.PI / 2, phi: 1.25 };
         break;
       case 'roof':
-        targetCameraPosRef.current.set(0, 5.0, 0.1);
+        targetCamPosRef.current.set(0, 4.8, 0.05);
         targetLookAtRef.current.set(0, 0.5, 0);
-        cameraSphericalRef.current = { radius: 5.0, theta: 0, phi: 0.06 };
         break;
       case 'rear':
-        targetCameraPosRef.current.set(0, 1.5, -4.2);
+        targetCamPosRef.current.set(0, 1.4, -4.0);
         targetLookAtRef.current.set(0, 0.45, -1.2);
-        cameraSphericalRef.current = { radius: 4.2, theta: Math.PI, phi: 1.2 };
         break;
       case 'general':
       default:
-        targetCameraPosRef.current.set(4.2, 2.6, 4.4);
+        targetCamPosRef.current.set(3.8, 2.2, 4.0);
         targetLookAtRef.current.set(0, 0.45, 0);
-        cameraSphericalRef.current = { radius: 6.2, theta: Math.PI / 4, phi: Math.PI / 3 };
         break;
     }
   }, []);
@@ -167,7 +159,33 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
   }, [cameraViewTrigger, setStudioCamera]);
 
-  // Project DecalGeometry exclusively onto paint body meshes (strictly never lights, lamps, or glass)
+  // Sync controls with interactMode
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+
+    if (interactMode === 'orbitCamera') {
+      controls.enableRotate = true;
+      controls.enableZoom = true;
+      controls.enablePan = true;
+    } else {
+      // In moveLogo mode, disable left-click rotation so drag moves the logo
+      // But keep right-click pan and scroll zoom fully active for maximum freedom!
+      controls.enableRotate = false;
+      controls.enableZoom = true;
+      controls.enablePan = true;
+    }
+  }, [interactMode]);
+
+  // Toggle Auto-Rotate
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = isAutoRotating;
+      controlsRef.current.autoRotateSpeed = 2.0;
+    }
+  }, [isAutoRotating]);
+
+  // Project DecalGeometry exclusively onto paint body meshes
   const projectDecal = useCallback((
     pos: [number, number, number],
     rot: [number, number, number],
@@ -179,7 +197,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const draftGroup = draftDecalGroupRef.current;
     if (!draftGroup) return;
 
-    // Clear old draft decals
     while (draftGroup.children.length > 0) {
       draftGroup.remove(draftGroup.children[0]);
     }
@@ -223,7 +240,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
-    const d = 0.45; // Projection depth box
+    const d = 0.45;
 
     const size = new THREE.Vector3(w, h, d);
 
@@ -261,7 +278,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
 
-    // Raycast ONLY against exterior paint body meshes (excluding lights, headlights, taillights, glass & windows)
+    // Raycast ONLY against exterior paint body meshes
     const validMeshes = paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
 
     const intersects = raycaster.intersectObjects(validMeshes, true);
@@ -368,12 +385,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const curH = draftSponsorRef.current?.heightCm || 20;
       const curAngle = draftSponsorRef.current?.rotationAngle || rotationAngle || 0;
 
-      // Project Decal directly onto the car body mesh
       projectDecal(pos3D, rot3D, curW, curH, curAngle, hit.object as THREE.Mesh);
     }
   }, [onUpdateDraftPosition, projectDecal, rotationAngle]);
 
-  // Initialize Three.js Scene
+  // Initialize Three.js Scene with OrbitControls
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -386,7 +402,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.copy(targetCameraPosRef.current);
+    camera.position.set(3.8, 2.2, 4.0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -396,6 +412,17 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     renderer.toneMappingExposure = 1.2;
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
+
+    // Three.js OrbitControls for Full Freedom Navigation (360 Orbit, Pan, Zoom)
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 1.6;
+    controls.maxDistance = 12.0;
+    controls.maxPolarAngle = Math.PI / 2 + 0.05; // allow looking slightly up from ground level
+    controls.minPolarAngle = 0.02; // top-down bird's eye
+    controls.target.set(0, 0.45, 0);
+    controlsRef.current = controls;
 
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
@@ -438,7 +465,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         scene.add(loaded.group);
         carGroupRef.current = loaded.group;
 
-        // Collect ONLY exterior paint body meshes for decals & raycasting (strictly no lights, no glass)
         paintMeshesRef.current = (loaded.paintMeshes || []).filter((m) => !isMeshForbidden(m));
         if (paintMeshesRef.current.length === 0) {
           const meshes: THREE.Mesh[] = [];
@@ -472,15 +498,17 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      if (isPointerDownRef.current && interactMode === 'orbitCamera') {
-        camera.position.copy(targetCameraPosRef.current);
-        camera.lookAt(currentLookAtRef.current);
-      } else {
-        camera.position.lerp(targetCameraPosRef.current, 0.08);
-        currentLookAtRef.current.lerp(targetLookAtRef.current, 0.08);
-        camera.lookAt(currentLookAtRef.current);
+      // Smooth camera transition when user clicks preset angles
+      if (isTransitioningRef.current) {
+        camera.position.lerp(targetCamPosRef.current, 0.08);
+        controls.target.lerp(targetLookAtRef.current, 0.08);
+
+        if (camera.position.distanceTo(targetCamPosRef.current) < 0.05) {
+          isTransitioningRef.current = false;
+        }
       }
 
+      controls.update();
       renderer.render(scene, camera);
     };
 
@@ -500,15 +528,16 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      controls.dispose();
       renderer.dispose();
       pmremGenerator.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [setStudioCamera, interactMode]);
+  }, []);
 
-  // Re-project Decal immediately whenever props change (dimensions, position, rotation, logo, rotationAngle)
+  // Re-project Decal immediately whenever props change
   useEffect(() => {
     if (isLoading || paintMeshesRef.current.length === 0) return;
 
@@ -592,12 +621,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     });
   }, [existingSponsors, isLoading]);
 
-  // Pointer Event Handlers (Drag to Move Logo OR Orbit Camera)
+  // Pointer Event Handlers
   const handlePointerDown = (e: React.PointerEvent) => {
+    isTransitioningRef.current = false;
     isPointerDownRef.current = true;
-    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
-    if (interactMode === 'moveLogo') {
+    // Left click in moveLogo mode places/drags logo
+    if (e.button === 0 && interactMode === 'moveLogo') {
       placeLogoAtScreenCoord(e.clientX, e.clientY);
     }
   };
@@ -605,47 +635,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isPointerDownRef.current || !containerRef.current) return;
 
-    if (interactMode === 'moveLogo') {
+    if (e.buttons === 1 && interactMode === 'moveLogo') {
       placeLogoAtScreenCoord(e.clientX, e.clientY);
-    } else {
-      const deltaX = e.clientX - previousMousePositionRef.current.x;
-      const deltaY = e.clientY - previousMousePositionRef.current.y;
-
-      cameraSphericalRef.current.theta -= deltaX * 0.007;
-      cameraSphericalRef.current.phi = Math.max(
-        0.15,
-        Math.min(Math.PI / 2 - 0.05, cameraSphericalRef.current.phi - deltaY * 0.007)
-      );
-
-      const r = cameraSphericalRef.current.radius;
-      const theta = cameraSphericalRef.current.theta;
-      const phi = cameraSphericalRef.current.phi;
-
-      targetCameraPosRef.current.set(
-        r * Math.sin(phi) * Math.sin(theta),
-        r * Math.cos(phi),
-        r * Math.sin(phi) * Math.cos(theta)
-      );
-
-      previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     }
   };
 
   const handlePointerUp = () => {
     isPointerDownRef.current = false;
-  };
-
-  const handleZoom = (direction: 'in' | 'out') => {
-    const factor = direction === 'in' ? 0.85 : 1.18;
-    cameraSphericalRef.current.radius = Math.max(3.2, Math.min(10.0, cameraSphericalRef.current.radius * factor));
-    const r = cameraSphericalRef.current.radius;
-    const theta = cameraSphericalRef.current.theta;
-    const phi = cameraSphericalRef.current.phi;
-    targetCameraPosRef.current.set(
-      r * Math.sin(phi) * Math.sin(theta),
-      r * Math.cos(phi),
-      r * Math.sin(phi) * Math.cos(theta)
-    );
   };
 
   // Direct scale adjustment helpers
@@ -705,7 +701,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span>👁️ Girar Auto 3D</span>
+            <span>👁️ Girar / Mover Vista 3D</span>
           </button>
 
           <button
@@ -722,23 +718,39 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
           </button>
         </div>
 
-        {/* Live Detected Zone Badge */}
-        {activeZoneName && (
-          <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg pointer-events-auto flex items-center gap-2">
-            <Compass className="w-3.5 h-3.5 text-sky-400" />
-            <span>{activeZoneName}</span>
-          </div>
-        )}
+        {/* Live Detected Zone Badge & Auto-Rotate Toggle */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setIsAutoRotating(!isAutoRotating)}
+            className={`px-3 py-2 rounded-2xl text-xs font-mono border transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
+              isAutoRotating
+                ? 'bg-sky-500 text-white border-sky-400 font-bold'
+                : 'bg-neutral-900/90 text-neutral-300 border-white/10 hover:text-white'
+            }`}
+            title="Auto-Girar Vista 360°"
+          >
+            {isAutoRotating ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Auto-Giro 360°</span>
+          </button>
+
+          {activeZoneName && (
+            <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2">
+              <Compass className="w-3.5 h-3.5 text-sky-400" />
+              <span>{activeZoneName}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Camera View Angle Selector Pills */}
-      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-1.5 max-w-[65%]">
+      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-1.5 max-w-[60%]">
         <button
           type="button"
           onClick={() => setStudioCamera('general')}
           className="px-2.5 py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 text-[10px] font-mono transition cursor-pointer backdrop-blur-sm"
         >
-          Vista General
+          Vista 360°
         </button>
         <button
           type="button"
@@ -872,7 +884,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
         <button
           type="button"
-          onClick={() => handleZoom('in')}
+          onClick={() => {
+            if (cameraRef.current) {
+              cameraRef.current.position.multiplyScalar(0.85);
+            }
+          }}
           className="p-2 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-white border border-white/10 transition cursor-pointer shadow-md backdrop-blur-sm"
           title="Zoom Acercar"
         >
@@ -880,7 +896,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => handleZoom('out')}
+          onClick={() => {
+            if (cameraRef.current) {
+              cameraRef.current.position.multiplyScalar(1.15);
+            }
+          }}
           className="p-2 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-white border border-white/10 transition cursor-pointer shadow-md backdrop-blur-sm"
           title="Zoom Alejar"
         >
@@ -890,7 +910,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
           type="button"
           onClick={() => setStudioCamera('general')}
           className="p-2 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-white border border-white/10 transition cursor-pointer shadow-md backdrop-blur-sm"
-          title="Reiniciar Vista"
+          title="Reiniciar Vista 3D"
         >
           <RotateCw className="w-3.5 h-3.5" />
         </button>
