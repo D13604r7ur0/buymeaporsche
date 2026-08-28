@@ -153,7 +153,6 @@ export const BuyModal: React.FC = () => {
     zoneName: string;
     pricePerCm2: number;
   }) => {
-    sounds.playClickSound();
     setCurrentPosition3D(update.position3D);
     setCurrentRotation3D(update.rotation3D);
     setSelectedTier(update.tier);

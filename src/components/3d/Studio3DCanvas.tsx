@@ -35,6 +35,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central Frontal');
   const [interactMode, setInteractMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
 
+  // Ref to avoid stale closures during high-frequency drag events
+  const draftSponsorRef = useRef<Partial<Sponsor>>(draftSponsor);
+  draftSponsorRef.current = draftSponsor;
+
   // Three.js instances
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -125,7 +129,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const meshesToProject = targetMesh ? [targetMesh] : paintMeshesRef.current;
     if (meshesToProject.length === 0) return;
 
-    const texture = createSponsorTexture(draftSponsor, true, true);
+    const texture = createSponsorTexture(draftSponsorRef.current, true, true);
     const decalMat = new THREE.MeshStandardMaterial({
       map: texture,
       transparent: true,
@@ -141,7 +145,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const position = new THREE.Vector3(...pos);
     const orientation = new THREE.Euler(...rot, 'YXZ');
     
-    // Scale derived directly from centimeters (e.g. 40cm -> 1.1 world units)
+    // Scale derived directly from centimeters
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
@@ -160,7 +164,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       }
     });
 
-    // If for any reason DecalGeometry produced empty geometry, provide clean fallback plane
+    // Fallback plane if DecalGeometry produced empty geometry
     if (draftGroup.children.length === 0) {
       const fallbackGeo = new THREE.PlaneGeometry(w, h);
       const fallbackMesh = new THREE.Mesh(fallbackGeo, decalMat);
@@ -168,7 +172,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       fallbackMesh.rotation.copy(orientation);
       draftGroup.add(fallbackMesh);
     }
-  }, [draftSponsor]);
+  }, []);
 
   // Surface placement math helper (Raycasting onto body panels)
   const placeLogoAtScreenCoord = useCallback((clientX: number, clientY: number) => {
@@ -236,28 +240,34 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         detectedPrice = 25;
       }
       // Hood (Cofre)
-      else if (pos3D[2] > 0.70) {
+      else if (pos3D[2] > 0.65) {
         detectedTier = 'hood_central';
         detectedZoneName = 'Cofre Central Frontal';
         detectedPrice = 20;
       }
       // Right Door (Puerta Derecha)
-      else if (pos3D[0] > 0.60) {
+      else if (pos3D[0] > 0.55) {
         detectedTier = 'premium_door';
         detectedZoneName = 'Puerta / Costado Derecho';
         detectedPrice = 15;
       }
       // Left Door (Puerta Izquierda)
-      else if (pos3D[0] < -0.60) {
+      else if (pos3D[0] < -0.55) {
         detectedTier = 'premium_door';
         detectedZoneName = 'Puerta / Costado Izquierdo';
         detectedPrice = 15;
       }
       // Roof (Techo)
-      else if (pos3D[1] > 1.25) {
+      else if (pos3D[1] > 1.22) {
         detectedTier = 'body_standard';
         detectedZoneName = 'Techo Panorámico';
         detectedPrice = 15;
+      }
+      // Rear bumper
+      else if (pos3D[2] < -1.4) {
+        detectedTier = 'body_standard';
+        detectedZoneName = 'Defensa Trasera';
+        detectedPrice = 10;
       }
       // Standard Body / Bumpers
       else {
@@ -276,10 +286,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         pricePerCm2: detectedPrice,
       });
 
+      const curW = draftSponsorRef.current?.widthCm || 35;
+      const curH = draftSponsorRef.current?.heightCm || 20;
+
       // Project Decal directly onto the car body mesh
-      projectDecal(pos3D, rot3D, draftSponsor.widthCm || 35, draftSponsor.heightCm || 20, hit.object as THREE.Mesh);
+      projectDecal(pos3D, rot3D, curW, curH, hit.object as THREE.Mesh);
     }
-  }, [onUpdateDraftPosition, projectDecal, draftSponsor.widthCm, draftSponsor.heightCm]);
+  }, [onUpdateDraftPosition, projectDecal]);
 
   // Initialize Three.js Scene
   useEffect(() => {
@@ -539,8 +552,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   // Direct scale adjustment helpers
   const handleQuickScale = (delta: number) => {
     if (!onUpdateDimensions) return;
-    const currentW = draftSponsor.widthCm || 35;
-    const currentH = draftSponsor.heightCm || 20;
+    const currentW = draftSponsorRef.current?.widthCm || 35;
+    const currentH = draftSponsorRef.current?.heightCm || 20;
     const aspect = currentW / currentH;
     const newW = Math.max(8, Math.min(120, currentW + delta));
     const newH = Math.max(5, Math.min(60, Math.round(newW / aspect)));
