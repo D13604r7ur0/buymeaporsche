@@ -11,7 +11,7 @@ export interface LoadedCarResult {
 
 export const loadRealPorscheModel = (
   url: string,
-  _carConfig: CarCustomization,
+  carConfig: CarCustomization,
   onProgress?: (progress: number) => void
 ): Promise<LoadedCarResult> => {
   return new Promise((resolve, reject) => {
@@ -30,57 +30,45 @@ export const loadRealPorscheModel = (
         const paintMeshes: THREE.Mesh[] = [];
         const wheelMeshes: THREE.Mesh[] = [];
 
-        // Ultra-Clean Translucent Crystal Frosted Silhouette Material
-        const silhouetteBodyMaterial = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#ffffff'),
-          metalness: 0.1,
-          roughness: 0.15,
-          transmission: 0.92, // Glass-like translucency
-          transparent: true,
-          opacity: 0.38, // Translucent silhouette so car shape is clear
-          ior: 1.48,
-          thickness: 0.6,
+        // Solid Premium Automotive Paint Body (Gloss White / Studio Showroom)
+        const solidBodyMaterial = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(carConfig?.bodyColor || '#f8fafc'),
+          metalness: 0.15,
+          roughness: 0.18,
           clearcoat: 1.0,
-          clearcoatRoughness: 0.08,
+          clearcoatRoughness: 0.05,
           reflectivity: 0.9,
-          envMapIntensity: 2.2,
-          side: THREE.FrontSide,
-        });
-
-        // Translucent Clear Glass
-        const silhouetteGlassMaterial = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#ffffff'),
-          metalness: 0.05,
-          roughness: 0.05,
-          transmission: 0.96,
-          transparent: true,
-          opacity: 0.22,
-          ior: 1.5,
-          envMapIntensity: 2.5,
-          side: THREE.FrontSide,
-        });
-
-        // Frosted Smoked Wheels & Trim
-        const silhouetteWheelMaterial = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#cbd5e1'),
-          metalness: 0.3,
-          roughness: 0.25,
-          transmission: 0.85,
-          transparent: true,
-          opacity: 0.45,
-          clearcoat: 0.5,
           envMapIntensity: 1.8,
           side: THREE.FrontSide,
         });
 
-        const silhouetteTrimMaterial = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#94a3b8'),
-          metalness: 0.2,
-          roughness: 0.3,
-          transmission: 0.80,
+        // Realistic Automotive Tinted Glass (Windows & Windshield)
+        const realisticGlassMaterial = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color('#0f172a'),
+          metalness: 0.1,
+          roughness: 0.05,
+          transmission: 0.82,
           transparent: true,
-          opacity: 0.35,
+          opacity: 0.85,
+          ior: 1.52,
+          envMapIntensity: 2.5,
+          side: THREE.FrontSide,
+        });
+
+        // Wheels & Rims
+        const realisticWheelMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(carConfig?.wheelColor || '#1e293b'),
+          metalness: 0.85,
+          roughness: 0.25,
           envMapIntensity: 1.5,
+        });
+
+        // Trims & Splitters
+        const realisticTrimMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color('#0f172a'),
+          metalness: 0.3,
+          roughness: 0.4,
+          envMapIntensity: 1.2,
         });
 
         // Compute Bounding Box & Normalize Scale
@@ -138,7 +126,7 @@ export const loadRealPorscheModel = (
               matName.includes('lamp') ||
               matName.includes('lens')
             ) {
-              mesh.material = silhouetteGlassMaterial;
+              mesh.material = realisticGlassMaterial;
             } else if (
               name.includes('wheel') ||
               name.includes('rim') ||
@@ -149,7 +137,7 @@ export const loadRealPorscheModel = (
               matName.includes('rim') ||
               matName.includes('tire')
             ) {
-              mesh.material = silhouetteWheelMaterial;
+              mesh.material = realisticWheelMaterial;
               wheelMeshes.push(mesh);
             } else if (
               name.includes('carbon') ||
@@ -162,10 +150,10 @@ export const loadRealPorscheModel = (
               name.includes('chassis') ||
               name.includes('engine')
             ) {
-              mesh.material = silhouetteTrimMaterial;
+              mesh.material = realisticTrimMaterial;
             } else {
               // Body Panels ONLY (Cofre, Puertas, Salpicaderas, Techo, Alerón, Fascias)
-              mesh.material = silhouetteBodyMaterial;
+              mesh.material = solidBodyMaterial;
               paintMeshes.push(mesh);
             }
           }
