@@ -10,8 +10,7 @@ import { SponsorDetailModal } from './components/ui/SponsorDetailModal';
 import { PorscheConfigurator } from './components/ui/PorscheConfigurator';
 import { CertificateModal } from './components/ui/CertificateModal';
 import { useSponsors } from './context/SponsorContext';
-import { ChevronDown, MousePointerClick, ArrowRight } from 'lucide-react';
-
+import { ChevronDown } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'3d' | 'roi' | 'events' | 'directory'>('3d');
@@ -21,8 +20,6 @@ const MainApp: React.FC = () => {
     totalRaisedMxn,
     goalMxn,
     goalProgressPercentage,
-    setIsBuyModalOpen,
-    setIsPlacementMode,
     contractYears,
   } = useSponsors();
 
@@ -46,11 +43,11 @@ const MainApp: React.FC = () => {
       {/* 1. HERO SECTION: 100VH FULLSCREEN 3D PORSCHE (FIRST THING YOU SEE) */}
       <section className="relative w-full h-screen bg-[#f8f9fa] overflow-hidden">
         
-        {/* Fullscreen 3D Canvas */}
+        {/* Fullscreen 3D Canvas with Unified Controls */}
         <PorscheScene />
 
         {/* Floating Top-Center Goal Badge */}
-        <div className="absolute top-20 sm:top-24 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none w-full max-w-md px-4 text-center">
+        <div className="absolute top-20 sm:top-22 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none w-full max-w-md px-4 text-center">
           <div className="inline-flex items-center gap-2.5 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-black/[0.08] shadow-sm pointer-events-auto">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-mono font-medium text-neutral-800">
@@ -62,33 +59,15 @@ const MainApp: React.FC = () => {
           </div>
         </div>
 
-        {/* Floating Bottom Action Buttons over 3D Car */}
-        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-3 w-full px-4">
-          <button
-            onClick={() => setIsPlacementMode(true)}
-            className="flex items-center gap-2 bg-white/90 hover:bg-white text-neutral-800 px-4 py-2.5 rounded-full text-xs font-medium border border-black/10 shadow-sm transition cursor-pointer"
-          >
-            <MousePointerClick className="w-3.5 h-3.5" />
-            <span>Colocar Sticker en 3D</span>
-          </button>
-
-          <button
-            onClick={() => setIsBuyModalOpen(true)}
-            className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-md transition cursor-pointer"
-          >
-            <span>Patrocinar ($1 MXN/cm²)</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Scroll Down Indicator */}
+        {/* Floating Discrete Scroll-to-Content Trigger */}
         <button
           onClick={() => scrollToSection('calculator')}
-          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-0.5 text-neutral-400 hover:text-neutral-900 transition cursor-pointer text-[10px] font-mono uppercase tracking-widest"
+          className="hidden md:flex absolute bottom-8 right-8 z-20 items-center gap-1.5 bg-white/80 hover:bg-white text-neutral-600 hover:text-neutral-900 px-3.5 py-1.5 rounded-full border border-black/10 shadow-sm text-xs font-mono transition cursor-pointer backdrop-blur-md"
         >
-          <span>Ver Calculadora & Patrocinadores</span>
-          <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
+          <span>Calculadora</span>
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
+
       </section>
 
       {/* 2. MAIN CONTENT SECTIONS */}
