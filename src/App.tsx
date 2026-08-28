@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { SponsorProvider } from './context/SponsorContext';
 import { Header } from './components/ui/Header';
 import { PorscheScene } from './components/3d/PorscheScene';
-import { WhatYouPayBreakdown } from './components/ui/WhatYouPayBreakdown';
 import { EventExpositionRoadmap } from './components/ui/EventExpositionRoadmap';
 import { SponsorDirectory } from './components/ui/SponsorDirectory';
 import { LeaderboardRanking } from './components/ui/LeaderboardRanking';
@@ -64,10 +63,10 @@ const MainApp: React.FC = () => {
 
         {/* Floating Discrete Scroll-to-Content Trigger */}
         <button
-          onClick={() => scrollToSection('calculator')}
+          onClick={() => scrollToSection('ranking')}
           className="hidden md:flex absolute bottom-8 right-8 z-20 items-center gap-1.5 bg-white/80 hover:bg-white text-neutral-600 hover:text-neutral-900 px-3.5 py-1.5 rounded-full border border-black/10 shadow-sm text-xs font-mono transition cursor-pointer backdrop-blur-md"
         >
-          <span>Calculadora</span>
+          <span>Ranking cm²</span>
           <ChevronDown className="w-3.5 h-3.5" />
         </button>
 
@@ -76,9 +75,9 @@ const MainApp: React.FC = () => {
       {/* 2. MAIN CONTENT SECTIONS */}
       <main className="flex-1 w-full bg-[#fafafa]">
         
-        {/* Section: Calculator & ROI */}
-        <div id="calculator">
-          <WhatYouPayBreakdown onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+        {/* Section: Leaderboard & Ranking by cm2 Size */}
+        <div id="ranking">
+          <LeaderboardRanking onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         </div>
 
         {/* Section: Event Exposition Roadmap */}

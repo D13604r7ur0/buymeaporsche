@@ -59,25 +59,18 @@ export const Header: React.FC<HeaderProps> = () => {
           </button>
 
           <button
-            onClick={() => scrollTo('calculator')}
-            className="hover:text-neutral-900 transition cursor-pointer"
+            onClick={() => scrollTo('ranking')}
+            className="hover:text-neutral-900 transition cursor-pointer flex items-center gap-1"
           >
-            Calculadora & ROI
+            <span>Ranking cm²</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
           </button>
 
           <button
             onClick={() => scrollTo('events')}
             className="hover:text-neutral-900 transition cursor-pointer"
           >
-            Gira Autódromos
-          </button>
-
-          <button
-            onClick={() => scrollTo('ranking')}
-            className="hover:text-neutral-900 transition cursor-pointer flex items-center gap-1"
-          >
-            <span>Ranking cm²</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            Gira & Pistas
           </button>
 
           <button
