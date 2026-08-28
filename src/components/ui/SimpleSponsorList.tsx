@@ -69,7 +69,6 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
           <div className="divide-y divide-black/[0.06] border-y border-black/[0.06]">
             {sortedSponsors.map((sponsor, index) => {
               const displayName = sponsor.sponsorName || sponsor.brandName;
-              const displayBrand = sponsor.sponsorName ? sponsor.brandName : null;
 
               return (
                 <div
@@ -97,14 +96,14 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
                       )}
                     </div>
 
-                    {/* Names */}
+                    {/* Account Name and Slogan */}
                     <div className="min-w-0">
                       <div className="font-semibold text-sm text-neutral-900 truncate">
                         {displayName}
                       </div>
-                      {displayBrand && (
+                      {sponsor.slogan && (
                         <div className="text-xs text-neutral-500 truncate">
-                          {displayBrand}
+                          "{sponsor.slogan}"
                         </div>
                       )}
                     </div>

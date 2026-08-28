@@ -14,7 +14,7 @@ export const EventExpositionRoadmap: React.FC<{ onNavigateTo3D?: () => void }> =
             Exposición Física, Pistas & Eventos
           </span>
           <h2 className="text-3xl sm:text-4xl font-heading font-bold text-neutral-900 tracking-tight">
-            ¿Dónde se verá tu marca durante {CONTRACT_YEARS} años?
+            ¿Dónde se verá tu logo durante {CONTRACT_YEARS} años?
           </h2>
           <p className="text-sm text-neutral-500 mt-2 font-sans leading-relaxed">
             La campaña financia un <strong>Porsche 911 (992)</strong> real que portará los logotipos de todos los patrocinadores en <strong>vinil automotriz de alta resistencia</strong> durante <strong>{CONTRACT_YEARS} años ({CONTRACT_DAYS} días)</strong> en Car Meets, autódromos y eventos exclusivos.

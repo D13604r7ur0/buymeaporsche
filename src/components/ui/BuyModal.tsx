@@ -534,28 +534,20 @@ export const BuyModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Brand and Personal Names */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Name and Slogan */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Nombre de la Marca / Empresa *</label>
+                  <label className="text-xs font-mono text-neutral-500 block mb-1">Tu Nombre o Cuenta *</label>
                   <input
                     type="text"
                     required
-                    placeholder="Ej. Apex Dynamics"
-                    value={brandName}
-                    onChange={(e) => setBrandName(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Tu Nombre / Patrocinador (Opcional):</label>
-                  <input
-                    type="text"
                     placeholder="Ej. Diego Arturo"
-                    value={sponsorName}
-                    onChange={(e) => setSponsorName(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                    value={sponsorName || brandName}
+                    onChange={(e) => {
+                      setSponsorName(e.target.value);
+                      setBrandName(e.target.value);
+                    }}
+                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                   />
                 </div>
 
@@ -563,10 +555,10 @@ export const BuyModal: React.FC = () => {
                   <label className="text-xs font-mono text-neutral-500 block mb-1">Slogan o Mensaje *</label>
                   <input
                     type="text"
-                    placeholder="Ej. Tecnología de Pistas"
+                    placeholder="Ej. Patrocinador Oficial Porsche 911"
                     value={slogan}
                     onChange={(e) => setSlogan(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                   />
                 </div>
               </div>
