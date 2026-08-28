@@ -9,16 +9,16 @@ export const createSponsorTexture = (
   isHovered = false,
   isFocused = false
 ): THREE.CanvasTexture => {
-  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl}_${sponsor.stickerBgColor}_${sponsor.stickerBorderColor}_${sponsor.logoScale}_${isHovered}_${isFocused}_${sponsor.tier}_${sponsor.widthCm}_${sponsor.heightCm}`;
+  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl}_${sponsor.stickerBgColor}_${sponsor.stickerBorderColor}_${isHovered}_${isFocused}_${sponsor.widthCm}_${sponsor.heightCm}`;
 
   if (textureCache.has(cacheKey)) {
     return textureCache.get(cacheKey)!;
   }
 
-  // High-Resolution 1024x512 Canvas for Ultra-Crisp Decals
+  // Square High-Resolution 1024x1024 Canvas for Maximum Sharpness
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
-  canvas.height = 512;
+  canvas.height = 1024;
   const ctx = canvas.getContext('2d');
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -31,114 +31,69 @@ export const createSponsorTexture = (
 
   const drawContent = () => {
     if (!ctx) return;
-    ctx.clearRect(0, 0, 1024, 512);
-
-    const bgColor = sponsor.stickerBgColor || '#0a0c10';
-    const borderColor = sponsor.stickerBorderColor || (isFocused ? '#ffffff' : isHovered ? '#e2e8f0' : 'rgba(255, 255, 255, 0.35)');
-    const textColor = sponsor.stickerTextColor || '#ffffff';
-
-    // Rounded Vinyl Badge
-    const radius = 48;
-    ctx.beginPath();
-    ctx.roundRect(16, 16, 992, 480, radius);
-
-    // Background Fill
-    if (bgColor === 'transparent') {
-      ctx.fillStyle = isFocused ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.30)';
-    } else {
-      ctx.fillStyle = bgColor;
-    }
-    ctx.fill();
-
-    // Fine High-Quality Border
-    if (borderColor !== 'transparent') {
-      ctx.lineWidth = isFocused ? 12 : isHovered ? 8 : 5;
-      ctx.strokeStyle = borderColor;
-      ctx.stroke();
-    }
+    ctx.clearRect(0, 0, 1024, 1024);
 
     const hasLogo = !!sponsor.logoUrl;
     const logoImg = sponsor.logoUrl ? imageCache.get(sponsor.logoUrl) : null;
 
     if (hasLogo && logoImg && (logoImg.complete || logoImg.naturalWidth > 0)) {
       try {
-        const imgScale = sponsor.logoScale || 1;
-        const maxImgWidth = 340 * imgScale;
-        const maxImgHeight = 340 * imgScale;
-
-        const natW = logoImg.naturalWidth || logoImg.width || 400;
-        const natH = logoImg.naturalHeight || logoImg.height || 400;
+        const natW = logoImg.naturalWidth || logoImg.width || 512;
+        const natH = logoImg.naturalHeight || logoImg.height || 512;
         const aspect = natW / natH;
 
-        let drawW = maxImgWidth;
-        let drawH = maxImgWidth / aspect;
-        if (drawH > maxImgHeight) {
-          drawH = maxImgHeight;
-          drawW = maxImgHeight * aspect;
+        let drawW = 960;
+        let drawH = 960 / aspect;
+
+        if (drawH > 960) {
+          drawH = 960;
+          drawW = 960 * aspect;
         }
 
-        const imgX = 48 + (maxImgWidth - drawW) / 2;
-        const imgY = (512 - drawH) / 2;
+        const imgX = (1024 - drawW) / 2;
+        const imgY = (1024 - drawH) / 2;
 
-        // Draw the Logo/Image prominently
+        // Optional Background Color (if user picked one other than transparent)
+        if (sponsor.stickerBgColor && sponsor.stickerBgColor !== 'transparent') {
+          ctx.fillStyle = sponsor.stickerBgColor;
+          ctx.beginPath();
+          ctx.roundRect(imgX - 16, imgY - 16, drawW + 32, drawH + 32, 24);
+          ctx.fill();
+        }
+
+        // Render ONLY the pure uploaded image/logo cleanly
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-        ctx.shadowBlur = 10;
         ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
         ctx.restore();
 
-        // Header Tag
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '700 24px "JetBrains Mono", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 420, 125);
-
-        // Brand Name
-        ctx.fillStyle = textColor;
-        ctx.font = 'bold 54px "Plus Jakarta Sans", system-ui, sans-serif';
-        const name = (sponsor.brandName || 'TU MARCA').toUpperCase();
-        ctx.fillText(name.length > 15 ? name.substring(0, 15) + '...' : name, 420, 205);
-
-        // Slogan
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = '500 28px "Plus Jakarta Sans", sans-serif';
-        const slogan = sponsor.slogan || 'Patrocinador Oficial';
-        ctx.fillText(slogan.length > 28 ? slogan.substring(0, 28) + '...' : slogan, 420, 275);
-
-        // URL Link
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = '700 26px "JetBrains Mono", monospace';
-        const url = (sponsor.targetUrl || 'buymeaporsche.com').replace(/^https?:\/\//, '');
-        ctx.fillText(`↗ ${url.length > 24 ? url.substring(0, 24) + '...' : url}`, 420, 350);
-
+        // Optional Glowing Selection Outline if hovered/focused
+        if (isFocused || isHovered) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 14;
+          ctx.setLineDash([20, 12]);
+          ctx.strokeRect(imgX - 10, imgY - 10, drawW + 20, drawH + 20);
+        }
       } catch (err) {
-        console.warn('Error drawing decal on canvas', err);
+        console.warn('Error drawing pure logo decal on canvas', err);
       }
     } else {
-      // Header Tag
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '700 28px "JetBrains Mono", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 64, 96);
+      // Fallback Typography ONLY if no image is uploaded yet
+      const bgColor = sponsor.stickerBgColor && sponsor.stickerBgColor !== 'transparent' ? sponsor.stickerBgColor : 'rgba(0, 0, 0, 0.7)';
+      ctx.fillStyle = bgColor;
+      ctx.beginPath();
+      ctx.roundRect(64, 256, 896, 512, 48);
+      ctx.fill();
 
-      // Brand Name
-      ctx.fillStyle = textColor;
+      ctx.strokeStyle = isFocused ? '#38bdf8' : '#ffffff';
+      ctx.lineWidth = 12;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 72px "Plus Jakarta Sans", system-ui, sans-serif';
       ctx.textAlign = 'center';
-      const name = (sponsor.brandName || 'TU MARCA').toUpperCase();
-      ctx.fillText(name.length > 18 ? name.substring(0, 18) + '...' : name, 512, 230);
-
-      // Slogan
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '500 34px "Plus Jakarta Sans", sans-serif';
-      const slogan = sponsor.slogan || 'Patrocinador Oficial Porsche 911 (992)';
-      ctx.fillText(slogan.length > 36 ? slogan.substring(0, 36) + '...' : slogan, 512, 310);
-
-      // URL
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = '700 28px "JetBrains Mono", monospace';
-      const url = (sponsor.targetUrl || 'buymeaporsche.com').replace(/^https?:\/\//, '');
-      ctx.fillText(`↗ ${url}`, 512, 390);
+      ctx.textBaseline = 'middle';
+      const name = (sponsor.sponsorName || sponsor.brandName || 'SUBE TU LOGO').toUpperCase();
+      ctx.fillText(name.length > 14 ? name.substring(0, 14) + '...' : name, 512, 512);
     }
 
     texture.needsUpdate = true;
@@ -147,7 +102,6 @@ export const createSponsorTexture = (
   if (sponsor.logoUrl) {
     if (!imageCache.has(sponsor.logoUrl)) {
       const img = new Image();
-      // Handle crossOrigin only for http/https, never for data URIs
       if (sponsor.logoUrl.startsWith('http')) {
         img.crossOrigin = 'anonymous';
       }
@@ -162,8 +116,9 @@ export const createSponsorTexture = (
     } else {
       drawContent();
     }
+  } else {
+    drawContent();
   }
 
-  drawContent();
   return texture;
 };

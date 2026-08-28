@@ -302,6 +302,10 @@ export const BuyModal: React.FC = () => {
               logoScale,
             }}
             onUpdateDraftPosition={handleUpdateFrom3D}
+            onUpdateDimensions={(w, h) => {
+              setWidthCm(w);
+              setHeightCm(h);
+            }}
             existingSponsors={sponsors}
           />
         </div>
