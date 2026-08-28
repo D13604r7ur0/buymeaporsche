@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
 import { useSponsors } from '../../context/SponsorContext';
 import type { CameraPresetName } from '../../context/SponsorContext';
 import { loadRealPorscheModel } from './RealPorscheLoader';
@@ -8,6 +9,38 @@ import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
 import type { Sponsor } from '../../types/sponsor';
 import { RotateCw, ZoomIn, ZoomOut, Loader2, MousePointerClick, Plus } from 'lucide-react';
+
+const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
+  const n = mesh.name.toLowerCase();
+  const m = (Array.isArray(mesh.material) ? mesh.material[0]?.name : mesh.material?.name)?.toLowerCase() || '';
+  return (
+    n.includes('glass') ||
+    n.includes('window') ||
+    n.includes('windshield') ||
+    n.includes('cristal') ||
+    n.includes('vidrio') ||
+    n.includes('light') ||
+    n.includes('headlight') ||
+    n.includes('taillight') ||
+    n.includes('lamp') ||
+    n.includes('faro') ||
+    n.includes('calavera') ||
+    n.includes('lens') ||
+    n.includes('reflector') ||
+    n.includes('signal') ||
+    n.includes('led') ||
+    n.includes('fog') ||
+    n.includes('wheel') ||
+    n.includes('rim') ||
+    n.includes('tire') ||
+    n.includes('interior') ||
+    m.includes('glass') ||
+    m.includes('window') ||
+    m.includes('light') ||
+    m.includes('lamp') ||
+    m.includes('lens')
+  );
+};
 
 export const PorscheScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,85 +79,101 @@ export const PorscheScene: React.FC = () => {
   const wheelMeshesRef = useRef<THREE.Mesh[]>([]);
   const decalsGroupRef = useRef<THREE.Group | null>(null);
   const pinsGroupRef = useRef<THREE.Group | null>(null);
-  const draftDecalMeshRef = useRef<THREE.Mesh | null>(null);
+  const draftDecalGroupRef = useRef<THREE.Group | null>(null);
 
-  const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3(4.2, 1.7, 4.2));
-  const targetLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.55, 0));
-  const currentLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.55, 0));
+  // Camera Orbit Controls State
+  const isDraggingRef = useRef<boolean>(false);
+  const previousMousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const cameraSphericalRef = useRef<{ radius: number; theta: number; phi: number }>({
+    radius: 6.2,
+    theta: Math.PI / 4,
+    phi: Math.PI / 3,
+  });
+  const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3(4.2, 2.2, 4.2));
+  const targetLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.45, 0));
+  const currentLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.45, 0));
 
-  // Orbit control state
-  const isDraggingRef = useRef(false);
-  const previousMousePositionRef = useRef({ x: 0, y: 0 });
-  const cameraSphericalRef = useRef({ radius: 6.0, theta: 0.8, phi: 1.2 });
-
-  // Camera presets
-  const getCameraTargets = useCallback((preset: CameraPresetName): { pos: THREE.Vector3; lookAt: THREE.Vector3 } => {
+  // Camera Preset Targets
+  const getCameraTargets = useCallback((preset: CameraPresetName) => {
     switch (preset) {
       case 'hood':
-        return { pos: new THREE.Vector3(0, 1.6, 2.8), lookAt: new THREE.Vector3(0, 0.6, 0.8) };
+        return { pos: new THREE.Vector3(0, 2.3, 3.8), lookAt: new THREE.Vector3(0, 0.65, 1.1) };
       case 'wing':
-        return { pos: new THREE.Vector3(0, 1.6, -3.2), lookAt: new THREE.Vector3(0, 0.7, -1.2) };
+        return { pos: new THREE.Vector3(0, 2.2, -3.9), lookAt: new THREE.Vector3(0, 0.75, -1.3) };
       case 'door_right':
-        return { pos: new THREE.Vector3(3.6, 0.95, 0), lookAt: new THREE.Vector3(0, 0.55, 0) };
+        return { pos: new THREE.Vector3(4.4, 1.4, 0), lookAt: new THREE.Vector3(0, 0.55, 0) };
       case 'door_left':
-        return { pos: new THREE.Vector3(-3.6, 0.95, 0), lookAt: new THREE.Vector3(0, 0.55, 0) };
+        return { pos: new THREE.Vector3(-4.4, 1.4, 0), lookAt: new THREE.Vector3(0, 0.55, 0) };
       case 'front':
-        return { pos: new THREE.Vector3(0, 0.85, 3.8), lookAt: new THREE.Vector3(0, 0.45, 0.6) };
+        return { pos: new THREE.Vector3(0, 1.2, 4.5), lookAt: new THREE.Vector3(0, 0.5, 0) };
       case 'top':
-        return { pos: new THREE.Vector3(0.01, 6.8, 0), lookAt: new THREE.Vector3(0, 0.35, 0) };
+        return { pos: new THREE.Vector3(0, 6.2, 0.05), lookAt: new THREE.Vector3(0, 0.5, 0) };
       case 'overview':
       default:
-        return { pos: new THREE.Vector3(4.2, 1.7, 4.2), lookAt: new THREE.Vector3(0, 0.55, 0) };
+        return { pos: new THREE.Vector3(4.2, 2.2, 4.2), lookAt: new THREE.Vector3(0, 0.45, 0) };
     }
   }, []);
 
+  // Update target camera position when preset changes
   useEffect(() => {
     const { pos, lookAt } = getCameraTargets(cameraPreset);
     targetCameraPosRef.current.copy(pos);
     targetLookAtRef.current.copy(lookAt);
+
+    // Update spherical coordinates
+    const offset = new THREE.Vector3().subVectors(pos, lookAt);
+    const radius = offset.length();
+    const phi = Math.acos(Math.max(-1, Math.min(1, offset.y / radius)));
+    const theta = Math.atan2(offset.x, offset.z);
+
+    cameraSphericalRef.current = { radius, theta, phi };
   }, [cameraPreset, getCameraTargets]);
 
-  // Main Scene Setup
+  // Main Scene Initialization
   useEffect(() => {
-    if (!containerRef.current) return;
     const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    if (!container) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
 
     // 1. Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#f8f9fa');
-    scene.fog = new THREE.FogExp2('#f8f9fa', 0.025);
+    scene.background = new THREE.Color(0xfbfbfc);
     sceneRef.current = scene;
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(4.2, 1.7, 4.2);
+    camera.position.set(4.2, 2.2, 4.2);
     cameraRef.current = camera;
 
-    // 3. Renderer with ACES Tone Mapping
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    // 3. High-Quality WebGL Renderer
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
-    container.appendChild(renderer.domElement);
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
+    container.appendChild(renderer.domElement);
 
-    // 4. Photorealistic Studio Environment Map
+    // 4. HDR Studio Environment
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
-    const envScene = new RoomEnvironment();
-    scene.environment = pmremGenerator.fromScene(envScene, 0.04).texture;
+    const roomEnv = new RoomEnvironment();
+    scene.environment = pmremGenerator.fromScene(roomEnv).texture;
 
-    // 5. Studio Lights
-    const ambientLight = new THREE.AmbientLight('#ffffff', 1.3);
+    // 5. Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const mainSoftbox = new THREE.DirectionalLight('#ffffff', 2.4);
-    mainSoftbox.position.set(3, 9, 3);
+    const mainSoftbox = new THREE.DirectionalLight('#ffffff', 2.8);
+    mainSoftbox.position.set(6, 12, 8);
     mainSoftbox.castShadow = true;
     mainSoftbox.shadow.mapSize.width = 2048;
     mainSoftbox.shadow.mapSize.height = 2048;
@@ -164,6 +213,11 @@ export const PorscheScene: React.FC = () => {
     scene.add(pinsGroup);
     pinsGroupRef.current = pinsGroup;
 
+    // Draft placement group
+    const draftGroup = new THREE.Group();
+    scene.add(draftGroup);
+    draftDecalGroupRef.current = draftGroup;
+
     // Load Real Porsche 911 (992)
     setIsLoadingModel(true);
     loadRealPorscheModel('/models/porsche-911.glb', carConfig)
@@ -171,7 +225,16 @@ export const PorscheScene: React.FC = () => {
         if (carGroupRef.current) scene.remove(carGroupRef.current);
         scene.add(group);
         carGroupRef.current = group;
-        paintMeshesRef.current = paintMeshes;
+        paintMeshesRef.current = (paintMeshes || []).filter((m) => !isMeshForbidden(m));
+        if (paintMeshesRef.current.length === 0) {
+          const meshes: THREE.Mesh[] = [];
+          group.traverse((c) => {
+            if ((c as THREE.Mesh).isMesh && !isMeshForbidden(c as THREE.Mesh)) {
+              meshes.push(c as THREE.Mesh);
+            }
+          });
+          paintMeshesRef.current = meshes;
+        }
         wheelMeshesRef.current = wheelMeshes;
         setIsLoadingModel(false);
       })
@@ -180,6 +243,13 @@ export const PorscheScene: React.FC = () => {
         const fallbackGroup = createPorscheCarGroup(carConfig);
         scene.add(fallbackGroup);
         carGroupRef.current = fallbackGroup;
+        const meshes: THREE.Mesh[] = [];
+        fallbackGroup.traverse((c) => {
+          if ((c as THREE.Mesh).isMesh && !isMeshForbidden(c as THREE.Mesh)) {
+            meshes.push(c as THREE.Mesh);
+          }
+        });
+        paintMeshesRef.current = meshes;
         setIsLoadingModel(false);
       });
 
@@ -220,16 +290,6 @@ export const PorscheScene: React.FC = () => {
         });
       }
 
-      // Draft Decal Pulse
-      if (draftDecalMeshRef.current) {
-        const pulse = 1 + Math.sin(time * 4) * 0.03;
-        draftDecalMeshRef.current.scale.set(
-          (draftSponsor?.scale3D?.[0] || 1) * pulse,
-          (draftSponsor?.scale3D?.[1] || 1) * pulse,
-          1
-        );
-      }
-
       renderer.render(scene, camera);
     };
 
@@ -257,23 +317,21 @@ export const PorscheScene: React.FC = () => {
     };
   }, [getCameraTargets]);
 
-
-
-  // Render Sponsor Decals & 3D Interactive Hotspot Pins
+  // Render Sponsor Decals onto Porsche Paint Panels using DecalGeometry
   useEffect(() => {
-    if (!decalsGroupRef.current || !pinsGroupRef.current) return;
     const decalsGroup = decalsGroupRef.current;
     const pinsGroup = pinsGroupRef.current;
+    if (!decalsGroup || !pinsGroup || isLoadingModel || paintMeshesRef.current.length === 0) return;
 
     while (decalsGroup.children.length > 0) {
-      const child = decalsGroup.children[0];
-      decalsGroup.remove(child);
+      decalsGroup.remove(decalsGroup.children[0]);
     }
 
     while (pinsGroup.children.length > 0) {
-      const child = pinsGroup.children[0];
-      pinsGroup.remove(child);
+      pinsGroup.remove(pinsGroup.children[0]);
     }
+
+    const validPaintMeshes = paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
 
     sponsors.forEach((sponsor) => {
       const isHovered = hoveredSponsor?.id === sponsor.id;
@@ -284,17 +342,16 @@ export const PorscheScene: React.FC = () => {
       const material = new THREE.MeshStandardMaterial({
         map: texture,
         transparent: true,
-        roughness: 0.25,
-        metalness: 0.1,
-        side: THREE.DoubleSide,
+        roughness: 0.15,
+        metalness: 0.05,
+        depthTest: true,
+        depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -4,
         polygonOffsetUnits: -4,
       });
 
-      const planeGeo = new THREE.PlaneGeometry(1, 1);
-      const decalMesh = new THREE.Mesh(planeGeo, material);
-      
+      const pos = new THREE.Vector3(...sponsor.position3D);
       const baseEuler = new THREE.Euler(...sponsor.rotation3D, 'YXZ');
       const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
 
@@ -306,60 +363,79 @@ export const PorscheScene: React.FC = () => {
       }
 
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
+      const scaleFactor = 0.028;
+      const size = new THREE.Vector3(
+        (sponsor.widthCm || 35) * scaleFactor,
+        (sponsor.heightCm || 20) * scaleFactor,
+        0.45
+      );
 
-      decalMesh.position.set(...sponsor.position3D);
-      decalMesh.rotation.copy(finalEuler);
-      decalMesh.scale.set(sponsor.scale3D[0], sponsor.scale3D[1], sponsor.scale3D[2]);
-      decalMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
-
-      decalsGroup.add(decalMesh);
+      validPaintMeshes.forEach((mesh) => {
+        try {
+          const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
+          const decalMesh = new THREE.Mesh(decalGeo, material);
+          decalMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
+          decalsGroup.add(decalMesh);
+        } catch (err) {
+          console.warn('Decal geometry projection warning', err);
+        }
+      });
 
       // Interactive Glowing Hotspot Pin
-      const pinGeo = new THREE.SphereGeometry(0.045, 16, 16);
+      const pinGeo = new THREE.SphereGeometry(0.04, 16, 16);
       const pinMat = new THREE.MeshBasicMaterial({
-        color: isFocused ? 0x00e5ff : isHovered ? 0xffffff : 0xd5001c,
+        color: isFocused ? 0x00e5ff : isHovered ? 0xffffff : 0x10b981,
       });
       const pinMesh = new THREE.Mesh(pinGeo, pinMat);
       pinMesh.position.set(
         sponsor.position3D[0],
-        sponsor.position3D[1] + 0.05,
+        sponsor.position3D[1] + 0.04,
         sponsor.position3D[2]
       );
       pinMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
       pinsGroup.add(pinMesh);
     });
 
-    if (draftSponsor && draftSponsor.position3D) {
-      const draftTexture = createSponsorTexture(draftSponsor, true, true);
-      const draftMaterial = new THREE.MeshStandardMaterial({
-        map: draftTexture,
-        transparent: true,
-        roughness: 0.2,
-        metalness: 0.1,
-        emissive: new THREE.Color('#d5001c'),
-        emissiveIntensity: 0.35,
-        side: THREE.DoubleSide,
-        polygonOffset: true,
-        polygonOffsetFactor: -6,
-        polygonOffsetUnits: -6,
-      });
+    // Render Draft placement ONLY if actively in placement mode
+    const draftGroup = draftDecalGroupRef.current;
+    if (draftGroup) {
+      while (draftGroup.children.length > 0) {
+        draftGroup.remove(draftGroup.children[0]);
+      }
 
-      const draftGeo = new THREE.PlaneGeometry(1, 0.5);
-      const draftMesh = new THREE.Mesh(draftGeo, draftMaterial);
-      draftMesh.position.set(...draftSponsor.position3D);
-      draftMesh.rotation.set(...(draftSponsor.rotation3D || [-1.22, 0, 0]));
-      draftMesh.scale.set(
-        draftSponsor.scale3D?.[0] || 0.8,
-        draftSponsor.scale3D?.[1] || 0.4,
-        1
-      );
-      draftMesh.userData = { isDraft: true };
-      draftDecalMeshRef.current = draftMesh;
-      decalsGroup.add(draftMesh);
-    } else {
-      draftDecalMeshRef.current = null;
+      if (isPlacementMode && draftSponsor && draftSponsor.position3D) {
+        const draftTex = createSponsorTexture(draftSponsor, true, true);
+        const draftMat = new THREE.MeshStandardMaterial({
+          map: draftTex,
+          transparent: true,
+          roughness: 0.2,
+          depthTest: true,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -4,
+          polygonOffsetUnits: -4,
+        });
+
+        const dPos = new THREE.Vector3(...draftSponsor.position3D);
+        const dEuler = new THREE.Euler(...(draftSponsor.rotation3D || [-1.22, 0, 0]), 'YXZ');
+        const dSize = new THREE.Vector3(
+          (draftSponsor.widthCm || 35) * 0.028,
+          (draftSponsor.heightCm || 20) * 0.028,
+          0.45
+        );
+
+        validPaintMeshes.forEach((mesh) => {
+          try {
+            const dGeo = new DecalGeometry(mesh, dPos, dEuler, dSize);
+            const dMesh = new THREE.Mesh(dGeo, draftMat);
+            draftGroup.add(dMesh);
+          } catch {
+            // ignore
+          }
+        });
+      }
     }
-  }, [sponsors, hoveredSponsor, focusedSponsorId, selectedSponsor, draftSponsor]);
+  }, [sponsors, hoveredSponsor, focusedSponsorId, selectedSponsor, draftSponsor, isPlacementMode, isLoadingModel]);
 
   // Pointer Handlers
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -448,20 +524,21 @@ export const PorscheScene: React.FC = () => {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
 
+    // If clicking a sponsor decal/hotspot pin
     const hitTargets: THREE.Object3D[] = [];
     if (decalsGroupRef.current) hitTargets.push(...decalsGroupRef.current.children);
     if (pinsGroupRef.current) hitTargets.push(...pinsGroupRef.current.children);
 
-    if (hitTargets.length > 0) {
+    if (hitTargets.length > 0 && !isPlacementMode) {
       const intersects = raycaster.intersectObjects(hitTargets, true);
       if (intersects.length > 0) {
-        let hitObj: THREE.Object3D | null = intersects[0].object;
-        while (hitObj && !hitObj.userData?.sponsorData && hitObj.parent) {
-          hitObj = hitObj.parent;
+        let hitObject: THREE.Object3D | null = intersects[0].object;
+        while (hitObject && !hitObject.userData?.sponsorData && hitObject.parent) {
+          hitObject = hitObject.parent;
         }
 
-        if (hitObj?.userData?.sponsorData) {
-          const sponsor: Sponsor = hitObj.userData.sponsorData;
+        if (hitObject?.userData?.sponsorData) {
+          const sponsor: Sponsor = hitObject.userData.sponsorData;
           setSelectedSponsor(sponsor);
           recordClick(sponsor.id);
           return;
@@ -469,21 +546,24 @@ export const PorscheScene: React.FC = () => {
       }
     }
 
-    if (isPlacementMode && carGroupRef.current) {
-      const intersects = raycaster.intersectObjects(carGroupRef.current.children, true);
+    // In placement mode: raycast onto Porsche body panels
+    if (isPlacementMode && paintMeshesRef.current.length > 0) {
+      const validPaintMeshes = paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
+      const intersects = raycaster.intersectObjects(validPaintMeshes, true);
+
       if (intersects.length > 0) {
         const hit = intersects[0];
         const point = hit.point;
 
-        let tier = 'body_standard';
+        let tier: any = 'body_standard';
         let zoneName = 'Carrocería & Salpicadera';
         let rot: [number, number, number] = [-1.22, 0, 0];
 
-        if (point.z < -1.2 && point.y > 0.7) {
+        if (point.z < -1.02 && point.y > 0.72) {
           tier = 'rear_decklid';
           zoneName = 'Tapa de Motor & Fascia Trasera (VIP)';
           rot = [-1.67, 0, 0];
-        } else if (point.z > 0.6 && point.y > 0.5) {
+        } else if (point.z > 0.65 && point.y > 0.5) {
           tier = 'hood_central';
           zoneName = 'Cofre Aerodinámico Central';
           rot = [-1.22, 0, 0];
@@ -497,9 +577,11 @@ export const PorscheScene: React.FC = () => {
           ...prev,
           position3D: [Number(point.x.toFixed(2)), Number(point.y.toFixed(2)), Number(point.z.toFixed(2))],
           rotation3D: rot,
-          scale3D: prev?.scale3D || [0.8, 0.4, 1],
+          widthCm: prev?.widthCm || 35,
+          heightCm: prev?.heightCm || 20,
+          tier,
           zoneName,
-          tier: tier as any,
+          pricePerCm2: tier === 'rear_decklid' ? 40 : tier === 'hood_central' ? 35 : tier === 'premium_door' ? 25 : 20,
         }));
 
         setIsPlacementMode(false);
@@ -508,44 +590,35 @@ export const PorscheScene: React.FC = () => {
     }
   };
 
-  const handleZoom = (inOut: 'in' | 'out') => {
-    const factor = inOut === 'in' ? 0.85 : 1.15;
-    cameraSphericalRef.current.radius = Math.max(2.8, Math.min(9.5, cameraSphericalRef.current.radius * factor));
-    const r = cameraSphericalRef.current.radius;
-    const theta = cameraSphericalRef.current.theta;
-    const phi = cameraSphericalRef.current.phi;
-
-    targetCameraPosRef.current.set(
-      r * Math.sin(phi) * Math.sin(theta),
-      r * Math.cos(phi),
-      r * Math.sin(phi) * Math.cos(theta)
-    );
-  };
-
   return (
-    <div className="relative w-full h-full select-none overflow-hidden bg-[#f8f9fa]">
+    <div className="relative w-full h-[65vh] sm:h-[75vh] md:h-[82vh] bg-gradient-to-b from-[#fbfbfc] via-[#f1f3f6] to-[#e2e8f0] flex items-center justify-center overflow-hidden select-none">
       
-      {/* 3D Viewport */}
+      {/* 3D Canvas Viewport */}
       <div
         ref={containerRef}
-        className="w-full h-full touch-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onClick={handleClick}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
       />
 
       {/* Loading Overlay */}
       {isLoadingModel && (
-        <div className="absolute inset-0 z-30 bg-[#f8f9fa]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-5 h-5 text-neutral-900 animate-spin" />
-          <span className="text-[10px] font-mono tracking-widest text-neutral-500 uppercase">
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-md">
+          <div className="relative mb-4">
+            <Loader2 className="w-10 h-10 animate-spin text-neutral-900" />
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold font-mono">
+              911
+            </div>
+          </div>
+          <span className="text-xs font-mono font-medium text-neutral-700 tracking-wider">
             Cargando Porsche 911 (992)...
           </span>
         </div>
       )}
 
-      {/* Placement Crosshair Mode Indicator */}
+      {/* Placement Mode Top Instruction Banner */}
       {isPlacementMode && (
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-30 bg-neutral-900 text-white px-4 py-2 rounded-full shadow-xl border border-white/20 text-xs font-mono flex items-center gap-2 animate-bounce">
           <MousePointerClick className="w-4 h-4 text-emerald-400" />
@@ -581,7 +654,7 @@ export const PorscheScene: React.FC = () => {
         </div>
       )}
 
-      {/* Unified Bottom Floating Dock (No Overlaps, Mobile-Optimized) */}
+      {/* Unified Bottom Floating Dock */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 max-w-[96vw] w-full sm:w-auto">
         
         {/* Row 1: Primary Action Buttons */}
@@ -600,7 +673,7 @@ export const PorscheScene: React.FC = () => {
             className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-md transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Patrocinar ($1 MXN/cm²)</span>
+            <span>Comprar Espacio · Personalizar Logo</span>
           </button>
         </div>
 
@@ -656,18 +729,39 @@ export const PorscheScene: React.FC = () => {
 
           <div className="h-3 w-px bg-black/10 mx-1 shrink-0" />
 
+          {/* Quick Zoom Buttons */}
           <button
-            onClick={() => handleZoom('in')}
-            className="p-1 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
-            title="Zoom In"
+            onClick={() => {
+              if (cameraRef.current) {
+                cameraSphericalRef.current.radius = Math.max(3.2, cameraSphericalRef.current.radius - 0.7);
+                const { radius, theta, phi } = cameraSphericalRef.current;
+                targetCameraPosRef.current.set(
+                  radius * Math.sin(phi) * Math.sin(theta),
+                  radius * Math.cos(phi),
+                  radius * Math.sin(phi) * Math.cos(theta)
+                );
+              }
+            }}
+            className="p-1 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-black/5 transition cursor-pointer"
+            title="Zoom +"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
 
           <button
-            onClick={() => handleZoom('out')}
-            className="p-1 rounded-full text-neutral-600 hover:text-neutral-900 transition cursor-pointer shrink-0"
-            title="Zoom Out"
+            onClick={() => {
+              if (cameraRef.current) {
+                cameraSphericalRef.current.radius = Math.min(10.0, cameraSphericalRef.current.radius + 0.7);
+                const { radius, theta, phi } = cameraSphericalRef.current;
+                targetCameraPosRef.current.set(
+                  radius * Math.sin(phi) * Math.sin(theta),
+                  radius * Math.cos(phi),
+                  radius * Math.sin(phi) * Math.cos(theta)
+                );
+              }
+            }}
+            className="p-1 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-black/5 transition cursor-pointer"
+            title="Zoom -"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
