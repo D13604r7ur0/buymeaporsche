@@ -44,15 +44,15 @@ export const createSponsorTexture = (
 
     // Background Fill
     if (bgColor === 'transparent') {
-      ctx.fillStyle = isFocused ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = isFocused ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.30)';
     } else {
       ctx.fillStyle = bgColor;
     }
     ctx.fill();
 
-    // Fine Border
+    // Fine High-Quality Border
     if (borderColor !== 'transparent') {
-      ctx.lineWidth = isFocused ? 10 : isHovered ? 8 : 4;
+      ctx.lineWidth = isFocused ? 12 : isHovered ? 8 : 5;
       ctx.strokeStyle = borderColor;
       ctx.stroke();
     }
@@ -60,13 +60,16 @@ export const createSponsorTexture = (
     const hasLogo = !!sponsor.logoUrl;
     const logoImg = sponsor.logoUrl ? imageCache.get(sponsor.logoUrl) : null;
 
-    if (hasLogo && logoImg && logoImg.complete) {
+    if (hasLogo && logoImg && (logoImg.complete || logoImg.naturalWidth > 0)) {
       try {
         const imgScale = sponsor.logoScale || 1;
-        const maxImgWidth = 280 * imgScale;
-        const maxImgHeight = 280 * imgScale;
+        const maxImgWidth = 340 * imgScale;
+        const maxImgHeight = 340 * imgScale;
 
-        const aspect = (logoImg.naturalWidth || logoImg.width || 1) / (logoImg.naturalHeight || logoImg.height || 1);
+        const natW = logoImg.naturalWidth || logoImg.width || 400;
+        const natH = logoImg.naturalHeight || logoImg.height || 400;
+        const aspect = natW / natH;
+
         let drawW = maxImgWidth;
         let drawH = maxImgWidth / aspect;
         if (drawH > maxImgHeight) {
@@ -74,34 +77,39 @@ export const createSponsorTexture = (
           drawW = maxImgHeight * aspect;
         }
 
-        const imgX = 64 + (maxImgWidth - drawW) / 2;
+        const imgX = 48 + (maxImgWidth - drawW) / 2;
         const imgY = (512 - drawH) / 2;
 
+        // Draw the Logo/Image prominently
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 10;
         ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
+        ctx.restore();
 
         // Header Tag
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '600 24px "JetBrains Mono", monospace';
+        ctx.font = '700 24px "JetBrains Mono", monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 380, 130);
+        ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 420, 125);
 
         // Brand Name
         ctx.fillStyle = textColor;
-        ctx.font = 'bold 56px "Plus Jakarta Sans", system-ui, sans-serif';
+        ctx.font = 'bold 54px "Plus Jakarta Sans", system-ui, sans-serif';
         const name = (sponsor.brandName || 'TU MARCA').toUpperCase();
-        ctx.fillText(name.length > 15 ? name.substring(0, 15) + '...' : name, 380, 210);
+        ctx.fillText(name.length > 15 ? name.substring(0, 15) + '...' : name, 420, 205);
 
         // Slogan
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '500 30px "Plus Jakarta Sans", sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '500 28px "Plus Jakarta Sans", sans-serif';
         const slogan = sponsor.slogan || 'Patrocinador Oficial';
-        ctx.fillText(slogan.length > 28 ? slogan.substring(0, 28) + '...' : slogan, 380, 280);
+        ctx.fillText(slogan.length > 28 ? slogan.substring(0, 28) + '...' : slogan, 420, 275);
 
         // URL Link
         ctx.fillStyle = '#38bdf8';
-        ctx.font = '600 26px "JetBrains Mono", monospace';
+        ctx.font = '700 26px "JetBrains Mono", monospace';
         const url = (sponsor.targetUrl || 'buymeaporsche.com').replace(/^https?:\/\//, '');
-        ctx.fillText(`↗ ${url.length > 25 ? url.substring(0, 25) + '...' : url}`, 380, 350);
+        ctx.fillText(`↗ ${url.length > 24 ? url.substring(0, 24) + '...' : url}`, 420, 350);
 
       } catch (err) {
         console.warn('Error drawing decal on canvas', err);
@@ -109,7 +117,7 @@ export const createSponsorTexture = (
     } else {
       // Header Tag
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '600 28px "JetBrains Mono", monospace';
+      ctx.font = '700 28px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
       ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 64, 96);
 
@@ -128,7 +136,7 @@ export const createSponsorTexture = (
 
       // URL
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '600 28px "JetBrains Mono", monospace';
+      ctx.font = '700 28px "JetBrains Mono", monospace';
       const url = (sponsor.targetUrl || 'buymeaporsche.com').replace(/^https?:\/\//, '');
       ctx.fillText(`↗ ${url}`, 512, 390);
     }
@@ -136,14 +144,24 @@ export const createSponsorTexture = (
     texture.needsUpdate = true;
   };
 
-  if (sponsor.logoUrl && !imageCache.has(sponsor.logoUrl)) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      imageCache.set(sponsor.logoUrl!, img);
+  if (sponsor.logoUrl) {
+    if (!imageCache.has(sponsor.logoUrl)) {
+      const img = new Image();
+      // Handle crossOrigin only for http/https, never for data URIs
+      if (sponsor.logoUrl.startsWith('http')) {
+        img.crossOrigin = 'anonymous';
+      }
+      img.onload = () => {
+        imageCache.set(sponsor.logoUrl!, img);
+        drawContent();
+      };
+      img.onerror = () => {
+        console.warn('Failed to load logo image:', sponsor.logoUrl);
+      };
+      img.src = sponsor.logoUrl;
+    } else {
       drawContent();
-    };
-    img.src = sponsor.logoUrl;
+    }
   }
 
   drawContent();
