@@ -83,7 +83,7 @@ export interface TrackEvent {
   date: string;
   yearSpan: string;
   estimatedReach: string;
-  type: 'Track Day' | 'Car Meet' | 'Exhibición VIP' | 'Carrera Time Attack' | 'Gira Nacional';
+  type: 'Track Day' | 'Car Meet' | 'Exhibición VIP' | 'Carrera Time Attack' | 'Gira Nacional' | 'Activación en tu Negocio' | 'Car Meet & Expo' | string;
   description: string;
 }
 
