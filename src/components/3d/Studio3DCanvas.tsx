@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
 import { loadRealPorscheModel } from './RealPorscheLoader';
 import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
@@ -19,6 +20,7 @@ interface Studio3DCanvasProps {
   }) => void;
   onUpdateDimensions?: (widthCm: number, heightCm: number) => void;
   existingSponsors: Sponsor[];
+  cameraViewTrigger?: string;
 }
 
 export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
@@ -26,10 +28,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   onUpdateDraftPosition,
   onUpdateDimensions,
   existingSponsors,
+  cameraViewTrigger,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central');
+  const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central Frontal');
   const [interactMode, setInteractMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
 
   // Three.js instances
@@ -37,27 +40,139 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const carGroupRef = useRef<THREE.Group | null>(null);
-  const carMeshesRef = useRef<THREE.Mesh[]>([]);
-  const draftDecalMeshRef = useRef<THREE.Mesh | null>(null);
-  const decalsGroupRef = useRef<THREE.Group | null>(null);
+  const paintMeshesRef = useRef<THREE.Mesh[]>([]);
+  const draftDecalGroupRef = useRef<THREE.Group | null>(null);
+  const existingDecalsGroupRef = useRef<THREE.Group | null>(null);
 
   // Dragging & Interaction State
   const isPointerDownRef = useRef<boolean>(false);
-  const isDraggingLogoRef = useRef<boolean>(false);
   const previousMousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   
   const cameraSphericalRef = useRef<{ radius: number; theta: number; phi: number }>({
-    radius: 6.5,
+    radius: 6.2,
     theta: Math.PI / 4,
     phi: Math.PI / 3,
   });
-  const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3(4.5, 3.2, 5.0));
+  const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3(4.2, 2.8, 4.5));
   const currentLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.45, 0));
   const targetLookAtRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.45, 0));
 
-  // Surface placement math helper
+  // Camera presets
+  const setStudioCamera = useCallback((view: 'general' | 'hood' | 'wing' | 'leftDoor' | 'rightDoor' | 'roof' | 'rear') => {
+    switch (view) {
+      case 'hood':
+        targetCameraPosRef.current.set(0, 2.4, 3.6);
+        targetLookAtRef.current.set(0, 0.65, 1.1);
+        cameraSphericalRef.current = { radius: 3.8, theta: 0, phi: 0.75 };
+        break;
+      case 'wing':
+        targetCameraPosRef.current.set(0, 2.2, -3.8);
+        targetLookAtRef.current.set(0, 0.85, -1.4);
+        cameraSphericalRef.current = { radius: 4.0, theta: Math.PI, phi: 0.85 };
+        break;
+      case 'leftDoor':
+        targetCameraPosRef.current.set(-4.2, 1.4, 0);
+        targetLookAtRef.current.set(0, 0.55, 0);
+        cameraSphericalRef.current = { radius: 4.2, theta: -Math.PI / 2, phi: 1.25 };
+        break;
+      case 'rightDoor':
+        targetCameraPosRef.current.set(4.2, 1.4, 0);
+        targetLookAtRef.current.set(0, 0.55, 0);
+        cameraSphericalRef.current = { radius: 4.2, theta: Math.PI / 2, phi: 1.25 };
+        break;
+      case 'roof':
+        targetCameraPosRef.current.set(0, 5.0, 0.1);
+        targetLookAtRef.current.set(0, 0.5, 0);
+        cameraSphericalRef.current = { radius: 5.0, theta: 0, phi: 0.06 };
+        break;
+      case 'rear':
+        targetCameraPosRef.current.set(0, 1.5, -4.2);
+        targetLookAtRef.current.set(0, 0.45, -1.2);
+        cameraSphericalRef.current = { radius: 4.2, theta: Math.PI, phi: 1.2 };
+        break;
+      case 'general':
+      default:
+        targetCameraPosRef.current.set(4.2, 2.6, 4.4);
+        targetLookAtRef.current.set(0, 0.45, 0);
+        cameraSphericalRef.current = { radius: 6.2, theta: Math.PI / 4, phi: Math.PI / 3 };
+        break;
+    }
+  }, []);
+
+  // Respond to cameraViewTrigger prop changes
+  useEffect(() => {
+    if (cameraViewTrigger) {
+      setStudioCamera(cameraViewTrigger as any);
+    }
+  }, [cameraViewTrigger, setStudioCamera]);
+
+  // Project DecalGeometry using surface normal & dimensions onto car mesh
+  const projectDecal = useCallback((
+    pos: [number, number, number],
+    rot: [number, number, number],
+    widthCm: number,
+    heightCm: number,
+    targetMesh?: THREE.Mesh
+  ) => {
+    const draftGroup = draftDecalGroupRef.current;
+    if (!draftGroup) return;
+
+    // Clear old draft decals
+    while (draftGroup.children.length > 0) {
+      draftGroup.remove(draftGroup.children[0]);
+    }
+
+    const meshesToProject = targetMesh ? [targetMesh] : paintMeshesRef.current;
+    if (meshesToProject.length === 0) return;
+
+    const texture = createSponsorTexture(draftSponsor, true, true);
+    const decalMat = new THREE.MeshStandardMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      polygonOffsetUnits: -4,
+      roughness: 0.15,
+      metalness: 0.05,
+    });
+
+    const position = new THREE.Vector3(...pos);
+    const orientation = new THREE.Euler(...rot, 'YXZ');
+    
+    // Scale derived directly from centimeters (e.g. 40cm -> 1.1 world units)
+    const scaleFactor = 0.028;
+    const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
+    const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
+    const d = 0.55; // Projection depth
+
+    const size = new THREE.Vector3(w, h, d);
+
+    // Create DecalGeometry on targeted car body mesh
+    meshesToProject.forEach((mesh) => {
+      try {
+        const decalGeo = new DecalGeometry(mesh, position, orientation, size);
+        const decalMesh = new THREE.Mesh(decalGeo, decalMat);
+        draftGroup.add(decalMesh);
+      } catch (err) {
+        console.warn('Decal projection error on mesh', err);
+      }
+    });
+
+    // If for any reason DecalGeometry produced empty geometry, provide clean fallback plane
+    if (draftGroup.children.length === 0) {
+      const fallbackGeo = new THREE.PlaneGeometry(w, h);
+      const fallbackMesh = new THREE.Mesh(fallbackGeo, decalMat);
+      fallbackMesh.position.copy(position);
+      fallbackMesh.rotation.copy(orientation);
+      draftGroup.add(fallbackMesh);
+    }
+  }, [draftSponsor]);
+
+  // Surface placement math helper (Raycasting onto body panels)
   const placeLogoAtScreenCoord = useCallback((clientX: number, clientY: number) => {
-    if (!containerRef.current || !cameraRef.current || carMeshesRef.current.length === 0) return;
+    if (!containerRef.current || !cameraRef.current || paintMeshesRef.current.length === 0) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -66,7 +181,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
 
-    const intersects = raycaster.intersectObjects(carMeshesRef.current, true);
+    // Raycast ONLY against exterior paint meshes
+    const intersects = raycaster.intersectObjects(paintMeshesRef.current, true);
 
     if (intersects.length > 0) {
       const hit = intersects[0];
@@ -79,7 +195,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       normal.normalize();
 
       // Lift decal slightly off the surface to eliminate z-fighting
-      const offsetPoint = point.clone().add(normal.clone().multiplyScalar(0.016));
+      const offsetPoint = point.clone().add(normal.clone().multiplyScalar(0.012));
 
       // Calculate stable, upright coordinate basis for decal surface
       let right = new THREE.Vector3();
@@ -97,7 +213,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         up.crossVectors(normal, right).normalize();
       }
 
-      // Handle Left vs Right sides so logo is never mirrored or inverted
+      // Handle Left vs Right door so logo is never mirrored or inverted
       if (normal.x < -0.4) {
         right.negate();
       }
@@ -160,50 +276,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         pricePerCm2: detectedPrice,
       });
 
-      // Update 3D mesh directly for 60fps butter-smooth feedback
-      if (draftDecalMeshRef.current) {
-        draftDecalMeshRef.current.position.set(...pos3D);
-        draftDecalMeshRef.current.rotation.set(...rot3D);
-      }
+      // Project Decal directly onto the car body mesh
+      projectDecal(pos3D, rot3D, draftSponsor.widthCm || 35, draftSponsor.heightCm || 20, hit.object as THREE.Mesh);
     }
-  }, [onUpdateDraftPosition]);
-
-  // Camera presets
-  const setStudioCamera = useCallback((view: 'general' | 'hood' | 'wing' | 'leftDoor' | 'rightDoor' | 'roof') => {
-    switch (view) {
-      case 'hood':
-        targetCameraPosRef.current.set(0, 2.5, 3.8);
-        targetLookAtRef.current.set(0, 0.65, 1.2);
-        cameraSphericalRef.current = { radius: 4.0, theta: 0, phi: 0.8 };
-        break;
-      case 'wing':
-        targetCameraPosRef.current.set(0, 2.3, -4.0);
-        targetLookAtRef.current.set(0, 0.9, -1.5);
-        cameraSphericalRef.current = { radius: 4.2, theta: Math.PI, phi: 0.9 };
-        break;
-      case 'leftDoor':
-        targetCameraPosRef.current.set(-4.5, 1.5, 0);
-        targetLookAtRef.current.set(0, 0.6, 0);
-        cameraSphericalRef.current = { radius: 4.5, theta: -Math.PI / 2, phi: 1.2 };
-        break;
-      case 'rightDoor':
-        targetCameraPosRef.current.set(4.5, 1.5, 0);
-        targetLookAtRef.current.set(0, 0.6, 0);
-        cameraSphericalRef.current = { radius: 4.5, theta: Math.PI / 2, phi: 1.2 };
-        break;
-      case 'roof':
-        targetCameraPosRef.current.set(0, 5.2, 0.1);
-        targetLookAtRef.current.set(0, 0.5, 0);
-        cameraSphericalRef.current = { radius: 5.2, theta: 0, phi: 0.08 };
-        break;
-      case 'general':
-      default:
-        targetCameraPosRef.current.set(4.5, 2.8, 4.6);
-        targetLookAtRef.current.set(0, 0.5, 0);
-        cameraSphericalRef.current = { radius: 6.5, theta: Math.PI / 4, phi: Math.PI / 3 };
-        break;
-    }
-  }, []);
+  }, [onUpdateDraftPosition, projectDecal, draftSponsor.widthCm, draftSponsor.heightCm]);
 
   // Initialize Three.js Scene
   useEffect(() => {
@@ -234,7 +310,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const roomEnv = new RoomEnvironment();
     scene.environment = pmremGenerator.fromScene(roomEnv).texture;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
     scene.add(ambientLight);
 
     const mainLight = new THREE.DirectionalLight(0xffffff, 2.8);
@@ -245,9 +321,14 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     fillLight.position.set(-6, 8, -6);
     scene.add(fillLight);
 
-    const decalsGroup = new THREE.Group();
-    scene.add(decalsGroup);
-    decalsGroupRef.current = decalsGroup;
+    // Decals Groups
+    const existingGroup = new THREE.Group();
+    scene.add(existingGroup);
+    existingDecalsGroupRef.current = existingGroup;
+
+    const draftGroup = new THREE.Group();
+    scene.add(draftGroup);
+    draftDecalGroupRef.current = draftGroup;
 
     // Load Porsche 3D Model
     setIsLoading(true);
@@ -265,13 +346,18 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         scene.add(loaded.group);
         carGroupRef.current = loaded.group;
 
-        const meshes: THREE.Mesh[] = [];
-        loaded.group.traverse((c) => {
-          if ((c as THREE.Mesh).isMesh) {
-            meshes.push(c as THREE.Mesh);
-          }
-        });
-        carMeshesRef.current = meshes;
+        // Collect ONLY exterior paint body meshes for decals & raycasting
+        paintMeshesRef.current = loaded.paintMeshes && loaded.paintMeshes.length > 0 ? loaded.paintMeshes : [];
+        if (paintMeshesRef.current.length === 0) {
+          const meshes: THREE.Mesh[] = [];
+          loaded.group.traverse((c) => {
+            if ((c as THREE.Mesh).isMesh && !c.name.toLowerCase().includes('glass') && !c.name.toLowerCase().includes('wheel')) {
+              meshes.push(c as THREE.Mesh);
+            }
+          });
+          paintMeshesRef.current = meshes;
+        }
+
         setIsLoading(false);
       })
       .catch(() => {
@@ -282,7 +368,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         fallbackGroup.traverse((c) => {
           if ((c as THREE.Mesh).isMesh) meshes.push(c as THREE.Mesh);
         });
-        carMeshesRef.current = meshes;
+        paintMeshesRef.current = meshes;
         setIsLoading(false);
       });
 
@@ -327,16 +413,36 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     };
   }, [setStudioCamera, interactMode]);
 
-  // Render Existing Sponsors + Live Pure Logo Decal
+  // Re-project Decal immediately whenever props change (dimensions, position, rotation, logo)
   useEffect(() => {
-    const decalsGroup = decalsGroupRef.current;
-    if (!decalsGroup) return;
+    if (isLoading || paintMeshesRef.current.length === 0) return;
 
-    while (decalsGroup.children.length > 0) {
-      decalsGroup.remove(decalsGroup.children[0]);
+    const pos = draftSponsor.position3D || [0, 0.96, 1.2];
+    const rot = draftSponsor.rotation3D || [-1.25, 0, 0];
+    const width = draftSponsor.widthCm || 35;
+    const height = draftSponsor.heightCm || 20;
+
+    projectDecal(pos, rot, width, height);
+  }, [
+    isLoading,
+    draftSponsor.position3D,
+    draftSponsor.rotation3D,
+    draftSponsor.widthCm,
+    draftSponsor.heightCm,
+    draftSponsor.logoUrl,
+    draftSponsor.tier,
+    projectDecal,
+  ]);
+
+  // Render Existing Sponsors
+  useEffect(() => {
+    const existingGroup = existingDecalsGroupRef.current;
+    if (!existingGroup || paintMeshesRef.current.length === 0) return;
+
+    while (existingGroup.children.length > 0) {
+      existingGroup.remove(existingGroup.children[0]);
     }
 
-    // 1. Existing sponsors
     existingSponsors.forEach((sponsor) => {
       const tex = createSponsorTexture(sponsor, false, false);
       const mat = new THREE.MeshStandardMaterial({
@@ -344,47 +450,33 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         transparent: true,
         roughness: 0.15,
         metalness: 0.05,
-        side: THREE.DoubleSide,
+        depthTest: true,
+        depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -4,
         polygonOffsetUnits: -4,
       });
-      const geo = new THREE.PlaneGeometry(1, 1);
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(...sponsor.position3D);
-      mesh.rotation.set(...sponsor.rotation3D);
-      mesh.scale.set(...sponsor.scale3D);
-      decalsGroup.add(mesh);
-    });
 
-    // 2. Draft Sponsor Decal (Pure Logo Texture)
-    if (draftSponsor.position3D) {
-      const draftTex = createSponsorTexture(draftSponsor, true, true);
-      const draftMat = new THREE.MeshStandardMaterial({
-        map: draftTex,
-        transparent: true,
-        roughness: 0.1,
-        metalness: 0.05,
-        side: THREE.DoubleSide,
-        polygonOffset: true,
-        polygonOffsetFactor: -6,
-        polygonOffsetUnits: -6,
+      const pos = new THREE.Vector3(...sponsor.position3D);
+      const rot = new THREE.Euler(...sponsor.rotation3D, 'YXZ');
+      const scaleFactor = 0.028;
+      const size = new THREE.Vector3(
+        (sponsor.widthCm || 35) * scaleFactor,
+        (sponsor.heightCm || 20) * scaleFactor,
+        0.55
+      );
+
+      paintMeshesRef.current.forEach((mesh) => {
+        try {
+          const decalGeo = new DecalGeometry(mesh, pos, rot, size);
+          const decalMesh = new THREE.Mesh(decalGeo, mat);
+          existingGroup.add(decalMesh);
+        } catch (err) {
+          console.warn('Error placing existing sponsor decal', err);
+        }
       });
-      const draftGeo = new THREE.PlaneGeometry(1, 1);
-      const draftMesh = new THREE.Mesh(draftGeo, draftMat);
-      draftMesh.position.set(...draftSponsor.position3D);
-      draftMesh.rotation.set(...(draftSponsor.rotation3D || [-1.22, 0, 0]));
-      
-      const widthScale = (draftSponsor.widthCm || 35) / 28;
-      const heightScale = (draftSponsor.heightCm || 20) / 28;
-      draftMesh.scale.set(widthScale, heightScale, 1);
-
-      draftDecalMeshRef.current = draftMesh;
-      decalsGroup.add(draftMesh);
-    } else {
-      draftDecalMeshRef.current = null;
-    }
-  }, [existingSponsors, draftSponsor]);
+    });
+  }, [existingSponsors, isLoading]);
 
   // Pointer Event Handlers (Drag to Move Logo OR Orbit Camera)
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -392,7 +484,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
     if (interactMode === 'moveLogo') {
-      isDraggingLogoRef.current = true;
       placeLogoAtScreenCoord(e.clientX, e.clientY);
     }
   };
@@ -430,7 +521,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
   const handlePointerUp = () => {
     isPointerDownRef.current = false;
-    isDraggingLogoRef.current = false;
   };
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -530,8 +620,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             const zone = ZONES.find((z) => z.id === 'hood_central');
             if (zone) {
               onUpdateDraftPosition({
-                position3D: zone.defaultPosition,
-                rotation3D: [-1.22, 0, 0],
+                position3D: [0, 0.96, 1.2],
+                rotation3D: [-1.25, 0, 0],
                 tier: 'hood_central',
                 zoneName: zone.name,
                 pricePerCm2: zone.pricePerCm2,
@@ -550,7 +640,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             const zone = ZONES.find((z) => z.id === 'vip_wing');
             if (zone) {
               onUpdateDraftPosition({
-                position3D: zone.defaultPosition,
+                position3D: [0, 0.98, -1.35],
                 rotation3D: [0.15, 0, 0],
                 tier: 'vip_wing',
                 zoneName: zone.name,

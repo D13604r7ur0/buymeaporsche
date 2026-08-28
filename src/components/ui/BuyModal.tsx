@@ -22,22 +22,6 @@ import {
   QrCode
 } from 'lucide-react';
 
-const STICKER_BG_COLORS = [
-  { name: 'Negro Profundo', hex: '#0a0c10' },
-  { name: 'Blanco Puro', hex: '#ffffff' },
-  { name: 'Rojo Carmín', hex: '#d5001c' },
-  { name: 'Amarillo Racing', hex: '#fcd34d' },
-  { name: 'Azul Noche', hex: '#1e3a8a' },
-  { name: 'Transparente', hex: 'transparent' },
-];
-
-const STICKER_BORDER_COLORS = [
-  { name: 'Blanco', hex: '#ffffff' },
-  { name: 'Oro Porsche', hex: '#d4af37' },
-  { name: 'Rojo', hex: '#d5001c' },
-  { name: 'Sin Borde', hex: 'transparent' },
-];
-
 export const BuyModal: React.FC = () => {
   const {
     isBuyModalOpen,
@@ -55,26 +39,24 @@ export const BuyModal: React.FC = () => {
 
   // Logo & dimensions state
   const [selectedTier, setSelectedTier] = useState<SponsorTier>(draftSponsor?.tier || 'hood_central');
-  const [widthCm, setWidthCm] = useState<number>(draftSponsor?.widthCm || 35);
-  const [heightCm, setHeightCm] = useState<number>(draftSponsor?.heightCm || 20);
+  const [widthCm, setWidthCm] = useState<number>(draftSponsor?.widthCm || 40);
+  const [heightCm, setHeightCm] = useState<number>(draftSponsor?.heightCm || 25);
   const [lockAspectRatio, setLockAspectRatio] = useState<boolean>(true);
-  const [aspectRatio, setAspectRatio] = useState<number>(35 / 20);
+  const [aspectRatio, setAspectRatio] = useState<number>(40 / 25);
   
   const [accountName, setAccountName] = useState<string>(draftSponsor?.sponsorName || draftSponsor?.brandName || '');
   const [slogan, setSlogan] = useState<string>(draftSponsor?.slogan || '');
   const targetUrl = draftSponsor?.targetUrl || 'https://buymeaporsche.com';
   const email = draftSponsor?.email || 'contacto@sponsor.com';
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(draftSponsor?.logoUrl || '');
-  const [stickerBgColor, setStickerBgColor] = useState<string>('#0a0c10');
-  const [stickerBorderColor, setStickerBorderColor] = useState<string>('#ffffff');
-  const logoScale = 1;
+  const [cameraViewTrigger, setCameraViewTrigger] = useState<string>('hood');
 
   // 3D positioning state
   const [currentPosition3D, setCurrentPosition3D] = useState<[number, number, number]>(
-    draftSponsor?.position3D || [0, 0.94, 1.15]
+    draftSponsor?.position3D || [0, 0.96, 1.2]
   );
   const [currentRotation3D, setCurrentRotation3D] = useState<[number, number, number]>(
-    draftSponsor?.rotation3D || [-1.22, 0, 0]
+    draftSponsor?.rotation3D || [-1.25, 0, 0]
   );
   const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');
   const [pricePerCm2, setPricePerCm2] = useState<number>(20);
@@ -112,10 +94,10 @@ export const BuyModal: React.FC = () => {
       zoneName: currentZoneName,
       position3D: currentPosition3D,
       rotation3D: currentRotation3D,
-      scale3D: [widthCm / 25, heightCm / 25, 1],
-      stickerBgColor,
-      stickerBorderColor,
-      logoScale,
+      scale3D: [widthCm / 28, heightCm / 28, 1],
+      stickerBgColor: 'transparent',
+      stickerBorderColor: 'transparent',
+      logoScale: 1,
       email,
     });
   }, [
@@ -127,9 +109,6 @@ export const BuyModal: React.FC = () => {
     slogan,
     targetUrl,
     logoPreviewUrl,
-    stickerBgColor,
-    stickerBorderColor,
-    logoScale,
     email,
     currentPosition3D,
     currentRotation3D,
@@ -154,7 +133,7 @@ export const BuyModal: React.FC = () => {
 
         const img = new Image();
         img.onload = () => {
-          const ratio = img.width / img.height;
+          const ratio = (img.width || 400) / (img.height || 400);
           setAspectRatio(ratio);
           if (lockAspectRatio) {
             const newH = Math.max(5, Math.min(60, Math.round(widthCm / ratio)));
@@ -204,11 +183,11 @@ export const BuyModal: React.FC = () => {
         totalPriceMxn,
         position3D: currentPosition3D,
         rotation3D: currentRotation3D,
-        scale3D: [widthCm / 25, heightCm / 25, 1],
+        scale3D: [widthCm / 28, heightCm / 28, 1],
         zoneName: currentZoneName,
-        stickerBgColor,
-        stickerBorderColor,
-        logoScale,
+        stickerBgColor: 'transparent',
+        stickerBorderColor: 'transparent',
+        logoScale: 1,
         contractYears: CONTRACT_YEARS,
         includesPhysicalVinylWrap: true,
         includesTrackDaysExhibition: true,
@@ -257,7 +236,7 @@ export const BuyModal: React.FC = () => {
               Estudio 3D de Colocación en Vivo · Porsche 911
             </h1>
             <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">
-              Arrastra tu sticker o haz clic sobre la carrocería para ubicar tu logo en tiempo real
+              Arrastra tu logo sobre la carrocería en 3D para posicionarlo en tiempo real
             </span>
           </div>
         </div>
@@ -282,8 +261,8 @@ export const BuyModal: React.FC = () => {
       {/* Main Split-Screen Workspace */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         
-        {/* LEFT PANEL: Live Interactive 3D Porsche Viewport (60% Desktop) */}
-        <div className="w-full lg:w-[58%] h-[42vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/10 relative bg-neutral-950">
+        {/* LEFT PANEL: Live Interactive 3D Porsche Viewport (58% Desktop) */}
+        <div className="w-full lg:w-[58%] h-[44vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/10 relative bg-neutral-950">
           <Studio3DCanvas
             draftSponsor={{
               id: 'draft',
@@ -293,13 +272,15 @@ export const BuyModal: React.FC = () => {
               logoUrl: logoPreviewUrl,
               position3D: currentPosition3D,
               rotation3D: currentRotation3D,
-              scale3D: [widthCm / 25, heightCm / 25, 1],
+              widthCm,
+              heightCm,
+              scale3D: [widthCm / 28, heightCm / 28, 1],
               zoneName: currentZoneName,
               tier: selectedTier,
               pricePerCm2,
-              stickerBgColor,
-              stickerBorderColor,
-              logoScale,
+              stickerBgColor: 'transparent',
+              stickerBorderColor: 'transparent',
+              logoScale: 1,
             }}
             onUpdateDraftPosition={handleUpdateFrom3D}
             onUpdateDimensions={(w, h) => {
@@ -307,11 +288,12 @@ export const BuyModal: React.FC = () => {
               setHeightCm(h);
             }}
             existingSponsors={sponsors}
+            cameraViewTrigger={cameraViewTrigger}
           />
         </div>
 
-        {/* RIGHT PANEL: Live Controls & Pricing Studio (42% Desktop) */}
-        <div className="w-full lg:w-[42%] h-[58vh] lg:h-full bg-white text-neutral-900 flex flex-col overflow-y-auto">
+        {/* RIGHT PANEL: Live Controls & Real-Time Pricing (42% Desktop) */}
+        <div className="w-full lg:w-[42%] h-[56vh] lg:h-full bg-white text-neutral-900 flex flex-col overflow-y-auto">
           
           {/* STEP 1: Logo, Dimensions & Auto-Pricing */}
           {step === 1 && (
@@ -427,7 +409,7 @@ export const BuyModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Zone Quick Positioner Buttons */}
+                {/* Zone Quick Positioner Buttons (Directly moves camera & snaps logo) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-mono text-neutral-600 block font-medium">
@@ -442,13 +424,14 @@ export const BuyModal: React.FC = () => {
                       type="button"
                       onClick={() => {
                         sounds.playClickSound();
-                        setCurrentPosition3D([0, 0.94, 1.15]);
-                        setCurrentRotation3D([-1.22, 0, 0]);
+                        setCameraViewTrigger('hood');
+                        setCurrentPosition3D([0, 0.96, 1.2]);
+                        setCurrentRotation3D([-1.25, 0, 0]);
                         setSelectedTier('hood_central');
                         setCurrentZoneName('Cofre Central Frontal');
                         setPricePerCm2(20);
                       }}
-                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                         selectedTier === 'hood_central' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                       }`}
                     >
@@ -460,13 +443,14 @@ export const BuyModal: React.FC = () => {
                       type="button"
                       onClick={() => {
                         sounds.playClickSound();
+                        setCameraViewTrigger('wing');
                         setCurrentPosition3D([0, 0.98, -1.35]);
                         setCurrentRotation3D([0.15, 0, 0]);
                         setSelectedTier('vip_wing');
                         setCurrentZoneName('Alerón Trasero VIP');
                         setPricePerCm2(25);
                       }}
-                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                         selectedTier === 'vip_wing' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                       }`}
                     >
@@ -478,13 +462,14 @@ export const BuyModal: React.FC = () => {
                       type="button"
                       onClick={() => {
                         sounds.playClickSound();
+                        setCameraViewTrigger('leftDoor');
                         setCurrentPosition3D([-1.02, 0.58, 0.15]);
                         setCurrentRotation3D([0, -Math.PI / 2, 0]);
                         setSelectedTier('premium_door');
-                        setCurrentZoneName('Puerta / Costado Izquierdo');
+                        setCurrentZoneName('Puerta Izquierda');
                         setPricePerCm2(15);
                       }}
-                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                         selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                       }`}
                     >
@@ -496,13 +481,14 @@ export const BuyModal: React.FC = () => {
                       type="button"
                       onClick={() => {
                         sounds.playClickSound();
+                        setCameraViewTrigger('rightDoor');
                         setCurrentPosition3D([1.02, 0.58, 0.15]);
                         setCurrentRotation3D([0, Math.PI / 2, 0]);
                         setSelectedTier('premium_door');
-                        setCurrentZoneName('Puerta / Costado Derecho');
+                        setCurrentZoneName('Puerta Derecha');
                         setPricePerCm2(15);
                       }}
-                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                         selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                       }`}
                     >
@@ -514,13 +500,14 @@ export const BuyModal: React.FC = () => {
                       type="button"
                       onClick={() => {
                         sounds.playClickSound();
+                        setCameraViewTrigger('roof');
                         setCurrentPosition3D([0, 1.34, -0.1]);
                         setCurrentRotation3D([-Math.PI / 2, 0, 0]);
                         setSelectedTier('body_standard');
                         setCurrentZoneName('Techo Panorámico');
                         setPricePerCm2(15);
                       }}
-                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                         currentZoneName.includes('Techo') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                       }`}
                     >
@@ -532,13 +519,14 @@ export const BuyModal: React.FC = () => {
                       type="button"
                       onClick={() => {
                         sounds.playClickSound();
+                        setCameraViewTrigger('rear');
                         setCurrentPosition3D([0, 0.45, -1.9]);
                         setCurrentRotation3D([0, Math.PI, 0]);
                         setSelectedTier('body_standard');
                         setCurrentZoneName('Defensa / Trasera');
                         setPricePerCm2(10);
                       }}
-                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                         currentZoneName.includes('Trasera') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                       }`}
                     >
@@ -571,45 +559,6 @@ export const BuyModal: React.FC = () => {
                       onChange={(e) => setSlogan(e.target.value)}
                       className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                     />
-                  </div>
-                </div>
-
-                {/* Color and Style Tuning */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div>
-                    <span className="text-[11px] font-mono text-neutral-500 block mb-1.5">Fondo del Badge:</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {STICKER_BG_COLORS.map((c) => (
-                        <button
-                          key={c.hex}
-                          type="button"
-                          onClick={() => setStickerBgColor(c.hex)}
-                          className={`w-6 h-6 rounded-full border transition cursor-pointer ${
-                            stickerBgColor === c.hex ? 'ring-2 ring-neutral-900 ring-offset-1 scale-110' : 'border-black/20'
-                          }`}
-                          style={{ backgroundColor: c.hex === 'transparent' ? '#ffffff' : c.hex }}
-                          title={c.name}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-mono text-neutral-500 block mb-1.5">Borde del Badge:</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {STICKER_BORDER_COLORS.map((c) => (
-                        <button
-                          key={c.hex}
-                          type="button"
-                          onClick={() => setStickerBorderColor(c.hex)}
-                          className={`w-6 h-6 rounded-full border transition cursor-pointer ${
-                            stickerBorderColor === c.hex ? 'ring-2 ring-neutral-900 ring-offset-1 scale-110' : 'border-black/20'
-                          }`}
-                          style={{ backgroundColor: c.hex === 'transparent' ? '#ffffff' : c.hex }}
-                          title={c.name}
-                        />
-                      ))}
-                    </div>
                   </div>
                 </div>
 
