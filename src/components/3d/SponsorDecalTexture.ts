@@ -9,7 +9,7 @@ export const createSponsorTexture = (
   _isHovered = false,
   _isFocused = false
 ): THREE.CanvasTexture => {
-  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl}_${sponsor.stickerBgColor}_${sponsor.widthCm}_${sponsor.heightCm}`;
+  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl}_${sponsor.flipX}_${sponsor.flipY}_${sponsor.filterStyle}_${sponsor.opacity}_${sponsor.widthCm}_${sponsor.heightCm}`;
 
   if (textureCache.has(cacheKey)) {
     return textureCache.get(cacheKey)!;
@@ -53,9 +53,31 @@ export const createSponsorTexture = (
         const imgX = (1024 - drawW) / 2;
         const imgY = (1024 - drawH) / 2;
 
-        // Render ONLY the pure uploaded image with transparent background
         ctx.save();
-        ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
+        ctx.globalAlpha = sponsor.opacity ?? 1.0;
+
+        // Apply Horizontal and Vertical Mirroring (Flip)
+        ctx.translate(512, 512);
+        ctx.scale(sponsor.flipX ? -1 : 1, sponsor.flipY ? -1 : 1);
+        ctx.translate(-512, -512);
+
+        if (sponsor.filterStyle === 'white') {
+          // Draw monochrome pure white vinyl logo
+          ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
+          ctx.globalCompositeOperation = 'source-in';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 1024, 1024);
+        } else if (sponsor.filterStyle === 'black') {
+          // Draw monochrome pitch black vinyl logo
+          ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
+          ctx.globalCompositeOperation = 'source-in';
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, 1024, 1024);
+        } else {
+          // Full-color original logo
+          ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
+        }
+
         ctx.restore();
       } catch (err) {
         console.warn('Error drawing pure logo decal on canvas', err);

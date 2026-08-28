@@ -42,6 +42,10 @@ export interface Sponsor {
   stickerBorderColor?: string;
   stickerFont?: 'sans' | 'racing' | 'luxury' | 'mono';
   logoScale?: number;
+  flipX?: boolean;
+  flipY?: boolean;
+  filterStyle?: 'original' | 'white' | 'black';
+  opacity?: number;
   
   // Sponsorship contract details (2 years = 730 days)
   createdAt: string;
