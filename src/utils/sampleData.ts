@@ -8,10 +8,10 @@ export const TOTAL_AVAILABLE_CM2 = 120000; // 120,000 cm² disponibles en la car
 
 export const ZONES: ZoneConfig[] = [
   {
-    id: 'vip_wing',
-    name: 'Alerón & Cajuela Trasera (VIP)',
-    shortName: 'Alerón / Trasera',
-    description: 'La zona trasera de máxima exposición en pista, tomas onboard y fotos de persecución.',
+    id: 'rear_decklid',
+    name: 'Tapa de Motor & Fascia Trasera (VIP)',
+    shortName: 'Tapa Trasera',
+    description: 'La zona trasera de máxima exposición en tomas de persecución, eventos y exhibiciones.',
     pricePerCm2: 25,
     defaultPosition: [0, 0.82, -1.82],
     defaultRotation: [-1.67, 0, 0],
@@ -170,7 +170,7 @@ export const TRACK_EVENTS_ROADMAP: TrackEvent[] = [
     yearSpan: '2 Años de Gira Oficial',
     estimatedReach: '60,000+ Aficionados presenciales en pits y gradas + Cobertura nacional',
     type: 'Track Day Time Attack',
-    description: 'Vueltas rápidas en circuitos profesionales. Los logos en cofre, puertas y alerón serán capturados en cámaras de alta velocidad y tomas on-board.',
+    description: 'Vueltas rápidas en circuitos profesionales. Los logos en cofre, puertas, techo y parte trasera serán capturados en cámaras de alta velocidad y tomas on-board.',
   },
 ];
 

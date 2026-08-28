@@ -44,7 +44,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
   // Sync 2D position based on incoming 3D position
   useEffect(() => {
     const pos = draftSponsor.position3D || [0, 0.96, 1.2];
-    if (draftSponsor.tier === 'vip_wing') {
+    if (draftSponsor.tier === 'rear_decklid' || (draftSponsor.tier as any) === 'vip_wing') {
       setActiveSection('top');
       setLogo2DPos({ x: 50 + pos[0] * 35, y: 18 });
     } else if (draftSponsor.tier === 'hood_central') {
@@ -78,13 +78,13 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
     const relX = (normX - 50) / 35; // centered relative offset
 
     if (section === 'top') {
-      // Top view (Y: 0% is rear wing, 100% is front hood)
+      // Top view (Y: 0% is rear decklid, 100% is front hood)
       if (normY < 28) {
-        // Alerón Trasero VIP
+        // Tapa de Motor & Fascia Trasera (VIP)
         pos3D = [relX * 0.7, 0.98, -1.35];
         rot3D = [0.15, 0, 0];
-        detectedTier = 'vip_wing';
-        detectedZoneName = 'Alerón Trasero VIP';
+        detectedTier = 'rear_decklid';
+        detectedZoneName = 'Tapa de Motor & Fascia Trasera';
         detectedPrice = 25;
       } else if (normY < 60) {
         // Techo Panorámico
@@ -188,7 +188,7 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
                 : 'text-neutral-300 hover:text-white bg-white/5'
             }`}
           >
-            <span>🔰 Vista Superior (Cofre / Techo / Alerón)</span>
+            <span>🔰 Vista Superior (Cofre / Techo / Tapa Trasera)</span>
           </button>
 
           <button
@@ -262,14 +262,14 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
           }}
         />
 
-        {/* 2D VECTOR BLUEPRINT: TOP VIEW (Cofre, Techo, Alerón VIP) */}
+        {/* 2D VECTOR BLUEPRINT: TOP VIEW (Cofre, Techo, Tapa Trasera) */}
         {activeSection === 'top' && (
           <div className="relative w-[320px] sm:w-[380px] h-[520px] border-2 border-sky-500/30 rounded-[70px] bg-slate-900/60 p-6 flex flex-col items-center justify-between shadow-2xl backdrop-blur-sm pointer-events-none">
             
-            {/* VIP Wing Section */}
+            {/* Rear Decklid Section */}
             <div className="w-full h-16 rounded-2xl border-2 border-dashed border-amber-400/50 bg-amber-400/10 flex flex-col items-center justify-center relative">
-              <span className="text-[10px] font-mono font-bold text-amber-300">🏁 ALERÓN TRASERO VIP ($25 MXN/cm²)</span>
-              <span className="text-[9px] font-mono text-neutral-400">Posición de máxima exposición</span>
+              <span className="text-[10px] font-mono font-bold text-amber-300">🏁 TAPA DE MOTOR TRASERA ($25 MXN/cm²)</span>
+              <span className="text-[9px] font-mono text-neutral-400">Rejilla y perfil trasero 992</span>
             </div>
 
             {/* Rear Windshield Glass (Excluded) */}

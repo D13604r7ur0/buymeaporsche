@@ -35,7 +35,7 @@ const CM2_PRESETS = [
   { label: 'Medio', area: 400, desc: 'Tablet' },
   { label: 'Grande', area: 800, desc: 'Laptop' },
   { label: 'Mega Logo', area: 1500, desc: 'Puerta' },
-  { label: 'VIP Sponsor', area: 3000, desc: 'Alerón / Frontal' },
+  { label: 'VIP Sponsor', area: 3000, desc: 'Cofre / Trasera' },
 ];
 
 export const BuyModal: React.FC = () => {
@@ -221,7 +221,7 @@ export const BuyModal: React.FC = () => {
   // Center in Current Zone
   const handleCenterInZone = () => {
     sounds.playClickSound();
-    if (selectedTier === 'vip_wing') {
+    if (selectedTier === 'rear_decklid' || selectedTier === 'vip_wing') {
       setCurrentPosition3D([0, 0.98, -1.35]);
       setCurrentRotation3D([0.15, 0, 0]);
     } else if (selectedTier === 'hood_central') {
@@ -908,16 +908,16 @@ export const BuyModal: React.FC = () => {
                       setCameraViewTrigger('wing');
                       setCurrentPosition3D([0, 0.98, -1.35]);
                       setCurrentRotation3D([0.15, 0, 0]);
-                      setSelectedTier('vip_wing');
-                      setCurrentZoneName('Alerón Trasero VIP');
+                      setSelectedTier('rear_decklid');
+                      setCurrentZoneName('Tapa de Motor & Fascia Trasera');
                       setPricePerCm2(25);
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
-                      selectedTier === 'vip_wing' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
-                    <div className="font-semibold text-[11px]">🏁 Alerón VIP</div>
-                    <div className={`text-[10px] ${selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
+                    <div className="font-semibold text-[11px]">🏁 Tapa Trasera</div>
+                    <div className={`text-[10px] ${selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
                   </button>
 
                   <button

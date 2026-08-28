@@ -1,4 +1,4 @@
-export type SponsorTier = 'vip_wing' | 'premium_door' | 'hood_central' | 'body_standard' | 'showroom_floor';
+export type SponsorTier = 'rear_decklid' | 'vip_wing' | 'premium_door' | 'hood_central' | 'body_standard' | 'showroom_floor';
 
 export type SponsorCategory = 
   | 'Tecnología & AI'

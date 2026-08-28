@@ -480,8 +480,8 @@ export const PorscheScene: React.FC = () => {
         let rot: [number, number, number] = [-1.22, 0, 0];
 
         if (point.z < -1.2 && point.y > 0.7) {
-          tier = 'vip_wing';
-          zoneName = 'Alerón & Cajuela Trasera (VIP)';
+          tier = 'rear_decklid';
+          zoneName = 'Tapa de Motor & Fascia Trasera (VIP)';
           rot = [-1.67, 0, 0];
         } else if (point.z > 0.6 && point.y > 0.5) {
           tier = 'hood_central';

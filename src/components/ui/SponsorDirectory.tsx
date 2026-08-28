@@ -75,7 +75,7 @@ export const SponsorDirectory: React.FC<{ onNavigateTo3D: () => void }> = ({ onN
               className="bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-700 focus:outline-none focus:border-neutral-900 cursor-pointer w-full sm:w-auto"
             >
               <option value="all">Todas las Zonas</option>
-              <option value="vip_wing">Alerón / Trasera</option>
+              <option value="rear_decklid">Tapa Trasera 992</option>
               <option value="hood_central">Cofre Central</option>
               <option value="premium_door">Puertas Laterales</option>
               <option value="body_standard">Salpicaderas & Facias</option>
@@ -111,7 +111,7 @@ export const SponsorDirectory: React.FC<{ onNavigateTo3D: () => void }> = ({ onN
                 Sé el primer patrocinador oficial en el Porsche 911
               </h3>
               <p className="text-xs text-neutral-500 max-w-md mx-auto font-sans leading-relaxed">
-                Los 120,000 cm² de la carrocería están 100% disponibles. Elige tu zona (cofre, puertas, alerón), sube tu logo y asegura tu presencia por 2 años.
+                Los 120,000 cm² de la carrocería están 100% disponibles. Elige tu zona (cofre, puertas, techo, parte trasera), sube tu logo y asegura tu presencia por 2 años.
               </p>
             </div>
             <button

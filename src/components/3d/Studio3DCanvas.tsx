@@ -328,10 +328,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       let detectedZoneName = 'Cofre Central Frontal';
       let detectedPrice = 20;
 
-      // Wing (Alerón Trasero)
+      // Rear Decklid & Engine Cover (Tapa de Motor Trasera)
       if (pos3D[2] < -1.05 && pos3D[1] > 0.75) {
-        detectedTier = 'vip_wing';
-        detectedZoneName = 'Alerón Trasero VIP';
+        detectedTier = 'rear_decklid';
+        detectedZoneName = 'Tapa de Motor & Fascia Trasera';
         detectedPrice = 25;
       }
       // Hood (Cofre)
@@ -776,21 +776,21 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
           type="button"
           onClick={() => {
             setStudioCamera('wing');
-            const zone = ZONES.find((z) => z.id === 'vip_wing');
+            const zone = ZONES.find((z) => z.id === 'rear_decklid') || ZONES[0];
             if (zone) {
               onUpdateDraftPosition({
                 position3D: [0, 0.98, -1.35],
                 rotation3D: [0.15, 0, 0],
-                tier: 'vip_wing',
-                zoneName: zone.name,
+                tier: 'rear_decklid',
+                zoneName: 'Tapa de Motor & Fascia Trasera',
                 pricePerCm2: zone.pricePerCm2,
               });
-              setActiveZoneName(zone.name);
+              setActiveZoneName('Tapa de Motor & Fascia Trasera');
             }
           }}
           className="px-2.5 py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 text-[10px] font-mono transition cursor-pointer backdrop-blur-sm"
         >
-          🏁 Alerón VIP
+          🏁 Tapa Trasera
         </button>
         <button
           type="button"

@@ -227,7 +227,7 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     // Smoothly focus camera on new decal
     setFocusedSponsorId(newSponsor.id);
-    if (newSponsor.tier === 'vip_wing') {
+    if (newSponsor.tier === 'rear_decklid' || newSponsor.tier === 'vip_wing') {
       setCameraPreset('wing');
     } else if (newSponsor.tier === 'hood_central') {
       setCameraPreset('hood');
@@ -247,7 +247,7 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setFocusedSponsorId(sponsorId);
     if (found) {
       setSelectedSponsor(found);
-      if (found.tier === 'vip_wing') {
+      if (found.tier === 'rear_decklid' || found.tier === 'vip_wing') {
         setCameraPreset('wing');
       } else if (found.tier === 'hood_central') {
         setCameraPreset('hood');
