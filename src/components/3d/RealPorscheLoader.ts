@@ -111,13 +111,23 @@ export const loadRealPorscheModel = (
               name.includes('glass') ||
               name.includes('window') ||
               name.includes('windshield') ||
-              matName.includes('glass')
+              name.includes('windscreen') ||
+              name.includes('cristal') ||
+              name.includes('vidrio') ||
+              name.includes('light') ||
+              name.includes('lamp') ||
+              matName.includes('glass') ||
+              matName.includes('window') ||
+              matName.includes('windshield') ||
+              matName.includes('lights')
             ) {
               mesh.material = silhouetteGlassMaterial;
             } else if (
               name.includes('wheel') ||
               name.includes('rim') ||
               name.includes('tire') ||
+              name.includes('brake') ||
+              name.includes('caliper') ||
               matName.includes('wheel') ||
               matName.includes('rim') ||
               matName.includes('tire')
@@ -129,11 +139,15 @@ export const loadRealPorscheModel = (
               name.includes('trim') ||
               name.includes('splitter') ||
               name.includes('mirror') ||
-              name.includes('interior')
+              name.includes('interior') ||
+              name.includes('seat') ||
+              name.includes('steering') ||
+              name.includes('chassis') ||
+              name.includes('engine')
             ) {
               mesh.material = silhouetteTrimMaterial;
             } else {
-              // Body Panels (Cofre, Puertas, Salpicaderas, Techo, Alerón)
+              // Body Panels ONLY (Cofre, Puertas, Salpicaderas, Techo, Alerón, Fascias)
               mesh.material = silhouetteBodyMaterial;
               paintMeshes.push(mesh);
             }

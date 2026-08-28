@@ -21,6 +21,8 @@ interface Studio3DCanvasProps {
   onUpdateDimensions?: (widthCm: number, heightCm: number) => void;
   existingSponsors: Sponsor[];
   cameraViewTrigger?: string;
+  interactMode?: 'moveLogo' | 'orbitCamera';
+  onToggleInteractMode?: (mode: 'moveLogo' | 'orbitCamera') => void;
 }
 
 export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
@@ -29,11 +31,21 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   onUpdateDimensions,
   existingSponsors,
   cameraViewTrigger,
+  interactMode: externalInteractMode,
+  onToggleInteractMode,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central Frontal');
-  const [interactMode, setInteractMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
+  const [internalMode, setInternalMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
+
+  const interactMode = externalInteractMode || internalMode;
+  const setInteractMode = (mode: 'moveLogo' | 'orbitCamera') => {
+    setInternalMode(mode);
+    if (onToggleInteractMode) {
+      onToggleInteractMode(mode);
+    }
+  };
 
   // Ref to avoid stale closures during high-frequency drag events
   const draftSponsorRef = useRef<Partial<Sponsor>>(draftSponsor);
@@ -110,7 +122,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
   }, [cameraViewTrigger, setStudioCamera]);
 
-  // Project DecalGeometry using surface normal & dimensions onto car mesh
+  // Project DecalGeometry exclusively onto paint body meshes (never glass)
   const projectDecal = useCallback((
     pos: [number, number, number],
     rot: [number, number, number],
@@ -149,12 +161,16 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
-    const d = 0.55; // Projection depth
+    const d = 0.45; // Projection depth box
 
     const size = new THREE.Vector3(w, h, d);
 
-    // Create DecalGeometry on targeted car body mesh
+    // Create DecalGeometry exclusively on paint meshes
     meshesToProject.forEach((mesh) => {
+      // Ensure we NEVER project on glass or window meshes
+      const name = mesh.name.toLowerCase();
+      if (name.includes('glass') || name.includes('window') || name.includes('windshield')) return;
+
       try {
         const decalGeo = new DecalGeometry(mesh, position, orientation, size);
         const decalMesh = new THREE.Mesh(decalGeo, decalMat);
@@ -185,8 +201,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
 
-    // Raycast ONLY against exterior paint meshes
-    const intersects = raycaster.intersectObjects(paintMeshesRef.current, true);
+    // Raycast ONLY against exterior paint body meshes (excluding glass & windows)
+    const validMeshes = paintMeshesRef.current.filter((m) => {
+      const n = m.name.toLowerCase();
+      return !n.includes('glass') && !n.includes('window') && !n.includes('windshield');
+    });
+
+    const intersects = raycaster.intersectObjects(validMeshes, true);
 
     if (intersects.length > 0) {
       const hit = intersects[0];
@@ -359,13 +380,16 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         scene.add(loaded.group);
         carGroupRef.current = loaded.group;
 
-        // Collect ONLY exterior paint body meshes for decals & raycasting
+        // Collect ONLY exterior paint body meshes for decals & raycasting (strictly no glass)
         paintMeshesRef.current = loaded.paintMeshes && loaded.paintMeshes.length > 0 ? loaded.paintMeshes : [];
         if (paintMeshesRef.current.length === 0) {
           const meshes: THREE.Mesh[] = [];
           loaded.group.traverse((c) => {
-            if ((c as THREE.Mesh).isMesh && !c.name.toLowerCase().includes('glass') && !c.name.toLowerCase().includes('wheel')) {
-              meshes.push(c as THREE.Mesh);
+            if ((c as THREE.Mesh).isMesh) {
+              const n = c.name.toLowerCase();
+              if (!n.includes('glass') && !n.includes('window') && !n.includes('windshield') && !n.includes('wheel')) {
+                meshes.push(c as THREE.Mesh);
+              }
             }
           });
           paintMeshesRef.current = meshes;
@@ -379,7 +403,12 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         carGroupRef.current = fallbackGroup;
         const meshes: THREE.Mesh[] = [];
         fallbackGroup.traverse((c) => {
-          if ((c as THREE.Mesh).isMesh) meshes.push(c as THREE.Mesh);
+          if ((c as THREE.Mesh).isMesh) {
+            const n = c.name.toLowerCase();
+            if (!n.includes('glass') && !n.includes('window')) {
+              meshes.push(c as THREE.Mesh);
+            }
+          }
         });
         paintMeshesRef.current = meshes;
         setIsLoading(false);
@@ -391,11 +420,14 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      if (!isPointerDownRef.current || interactMode === 'moveLogo') {
-        camera.position.lerp(targetCameraPosRef.current, 0.08);
-        currentLookAtRef.current.lerp(targetLookAtRef.current, 0.08);
+      if (isPointerDownRef.current && interactMode === 'orbitCamera') {
+        // Direct snappy camera update on drag
+        camera.position.copy(targetCameraPosRef.current);
         camera.lookAt(currentLookAtRef.current);
       } else {
+        // Smooth lerp when moving between camera angles
+        camera.position.lerp(targetCameraPosRef.current, 0.08);
+        currentLookAtRef.current.lerp(targetLookAtRef.current, 0.08);
         camera.lookAt(currentLookAtRef.current);
       }
 
@@ -476,10 +508,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const size = new THREE.Vector3(
         (sponsor.widthCm || 35) * scaleFactor,
         (sponsor.heightCm || 20) * scaleFactor,
-        0.55
+        0.45
       );
 
       paintMeshesRef.current.forEach((mesh) => {
+        const name = mesh.name.toLowerCase();
+        if (name.includes('glass') || name.includes('window') || name.includes('windshield')) return;
+
         try {
           const decalGeo = new DecalGeometry(mesh, pos, rot, size);
           const decalMesh = new THREE.Mesh(decalGeo, mat);
@@ -508,7 +543,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       // Smooth continuous 60fps decal dragging across the Porsche body
       placeLogoAtScreenCoord(e.clientX, e.clientY);
     } else {
-      // Orbit camera rotation
+      // Smooth 360 orbit camera rotation
       const deltaX = e.clientX - previousMousePositionRef.current.x;
       const deltaY = e.clientY - previousMousePositionRef.current.y;
 
@@ -569,7 +604,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className={`w-full h-full relative flex-1 ${interactMode === 'moveLogo' ? 'cursor-grab active:cursor-grabbing' : 'cursor-move'}`}
+        className={`w-full h-full relative flex-1 ${
+          interactMode === 'moveLogo'
+            ? 'cursor-crosshair'
+            : 'cursor-grab active:cursor-grabbing'
+        }`}
       />
 
       {/* Loading Overlay */}
@@ -580,37 +619,41 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Floating Top Mode Selector: Drag Logo vs Orbit Camera */}
+      {/* Floating Top Mode Selector: Orbit Camera vs Drag Logo */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         
-        {/* Interaction Mode Toggle */}
-        <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 p-1 rounded-2xl flex items-center gap-1 shadow-xl pointer-events-auto">
+        {/* Prominent Mode Switcher */}
+        <div className="bg-neutral-900/95 backdrop-blur-md border border-white/15 p-1 rounded-2xl flex items-center gap-1 shadow-2xl pointer-events-auto">
           <button
             type="button"
-            onClick={() => setInteractMode('moveLogo')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono transition cursor-pointer flex items-center gap-1.5 ${
-              interactMode === 'moveLogo' ? 'bg-sky-500 text-white font-bold shadow-sm' : 'text-neutral-300 hover:text-white'
+            onClick={() => setInteractMode('orbitCamera')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-mono transition cursor-pointer flex items-center gap-2 ${
+              interactMode === 'orbitCamera'
+                ? 'bg-white text-neutral-950 font-bold shadow-md'
+                : 'text-neutral-300 hover:text-white'
             }`}
           >
-            <Move className="w-3.5 h-3.5" />
-            <span>Arrastrar Logo</span>
+            <Eye className="w-4 h-4" />
+            <span>👁️ Mover Vista 3D (Girar Auto)</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setInteractMode('orbitCamera')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono transition cursor-pointer flex items-center gap-1.5 ${
-              interactMode === 'orbitCamera' ? 'bg-white text-neutral-950 font-bold shadow-sm' : 'text-neutral-300 hover:text-white'
+            onClick={() => setInteractMode('moveLogo')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-mono transition cursor-pointer flex items-center gap-2 ${
+              interactMode === 'moveLogo'
+                ? 'bg-sky-500 text-white font-bold shadow-md'
+                : 'text-neutral-300 hover:text-white'
             }`}
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Girar Vista 3D</span>
+            <Move className="w-4 h-4" />
+            <span>✋ Mover Logo en el Porsche</span>
           </button>
         </div>
 
         {/* Live Detected Zone Badge */}
         {activeZoneName && (
-          <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-1.5 rounded-2xl shadow-lg pointer-events-auto flex items-center gap-2">
+          <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg pointer-events-auto flex items-center gap-2">
             <Compass className="w-3.5 h-3.5 text-sky-400" />
             <span>{activeZoneName}</span>
           </div>

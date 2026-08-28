@@ -19,7 +19,8 @@ import {
   Award, 
   Lock, 
   Unlock,
-  QrCode
+  QrCode,
+  Move
 } from 'lucide-react';
 
 export const BuyModal: React.FC = () => {
@@ -50,6 +51,7 @@ export const BuyModal: React.FC = () => {
   const email = draftSponsor?.email || 'contacto@sponsor.com';
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(draftSponsor?.logoUrl || '');
   const [cameraViewTrigger, setCameraViewTrigger] = useState<string>('hood');
+  const [interactMode, setInteractMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
 
   // 3D positioning state
   const [currentPosition3D, setCurrentPosition3D] = useState<[number, number, number]>(
@@ -288,6 +290,8 @@ export const BuyModal: React.FC = () => {
             }}
             existingSponsors={sponsors}
             cameraViewTrigger={cameraViewTrigger}
+            interactMode={interactMode}
+            onToggleInteractMode={setInteractMode}
           />
         </div>
 
@@ -299,7 +303,7 @@ export const BuyModal: React.FC = () => {
             <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between">
               <div className="space-y-6">
                 
-                {/* Header Instructions */}
+                {/* Header Instructions & 3D Mode Selector */}
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mb-1">
                     Paso 1 de 2 · Personalización & Medidas
@@ -307,9 +311,38 @@ export const BuyModal: React.FC = () => {
                   <h2 className="text-xl sm:text-2xl font-heading font-bold text-neutral-900">
                     Sube tu Logo & Ajusta el Tamaño
                   </h2>
-                  <p className="text-xs text-neutral-500 font-sans mt-0.5">
-                    Mueve o haz clic sobre el Porsche 3D (a la izquierda) para posicionar tu logo exactamente donde quieras.
+                  <p className="text-xs text-neutral-500 font-sans mt-0.5 mb-3">
+                    Usa los controles para rotar el Porsche 3D o arrastrar tu logo a cualquier parte de la carrocería.
                   </p>
+
+                  {/* Mode Selector in Sidebar */}
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-neutral-100 rounded-2xl border border-black/10">
+                    <button
+                      type="button"
+                      onClick={() => setInteractMode('orbitCamera')}
+                      className={`py-2 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        interactMode === 'orbitCamera'
+                          ? 'bg-white text-neutral-950 font-bold shadow-xs border border-black/10'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Girar Auto 3D</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setInteractMode('moveLogo')}
+                      className={`py-2 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        interactMode === 'moveLogo'
+                          ? 'bg-neutral-900 text-white font-bold shadow-xs'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      <Move className="w-3.5 h-3.5" />
+                      <span>Mover Logo</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Logo Uploader Dropzone */}
