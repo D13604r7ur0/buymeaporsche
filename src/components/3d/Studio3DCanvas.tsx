@@ -9,6 +9,47 @@ import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
 import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw } from 'lucide-react';
 
+const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
+  const n = mesh.name.toLowerCase();
+  const m = (Array.isArray(mesh.material) ? mesh.material[0]?.name : mesh.material?.name)?.toLowerCase() || '';
+  return (
+    n.includes('glass') ||
+    n.includes('window') ||
+    n.includes('windshield') ||
+    n.includes('windscreen') ||
+    n.includes('cristal') ||
+    n.includes('vidrio') ||
+    n.includes('light') ||
+    n.includes('headlight') ||
+    n.includes('taillight') ||
+    n.includes('lamp') ||
+    n.includes('faro') ||
+    n.includes('calavera') ||
+    n.includes('lens') ||
+    n.includes('reflector') ||
+    n.includes('signal') ||
+    n.includes('turn') ||
+    n.includes('indicator') ||
+    n.includes('led') ||
+    n.includes('fog') ||
+    n.includes('stop') ||
+    n.includes('drl') ||
+    n.includes('optic') ||
+    n.includes('mirror') ||
+    n.includes('wheel') ||
+    n.includes('rim') ||
+    n.includes('tire') ||
+    n.includes('interior') ||
+    n.includes('seat') ||
+    m.includes('glass') ||
+    m.includes('window') ||
+    m.includes('lights') ||
+    m.includes('light') ||
+    m.includes('lamp') ||
+    m.includes('lens')
+  );
+};
+
 interface Studio3DCanvasProps {
   draftSponsor: Partial<Sponsor>;
   onUpdateDraftPosition: (update: {
@@ -126,7 +167,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
   }, [cameraViewTrigger, setStudioCamera]);
 
-  // Project DecalGeometry exclusively onto paint body meshes with custom angle rotation
+  // Project DecalGeometry exclusively onto paint body meshes (strictly never lights, lamps, or glass)
   const projectDecal = useCallback((
     pos: [number, number, number],
     rot: [number, number, number],
@@ -143,7 +184,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       draftGroup.remove(draftGroup.children[0]);
     }
 
-    const meshesToProject = targetMesh ? [targetMesh] : paintMeshesRef.current;
+    const meshesToProject = targetMesh 
+      ? [targetMesh].filter((m) => !isMeshForbidden(m))
+      : paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
+
     if (meshesToProject.length === 0) return;
 
     const texture = createSponsorTexture(draftSponsorRef.current, true, true);
@@ -165,7 +209,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const baseEuler = new THREE.Euler(...rot, 'YXZ');
     const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
     
-    // Normal vector is the Z axis of the orientation basis
     const normal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
     
     if (angleDeg !== 0) {
@@ -184,10 +227,9 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
     const size = new THREE.Vector3(w, h, d);
 
-    // Create DecalGeometry exclusively on paint meshes (never glass)
+    // Create DecalGeometry exclusively on valid paint body meshes
     meshesToProject.forEach((mesh) => {
-      const name = mesh.name.toLowerCase();
-      if (name.includes('glass') || name.includes('window') || name.includes('windshield')) return;
+      if (isMeshForbidden(mesh)) return;
 
       try {
         const decalGeo = new DecalGeometry(mesh, position, finalEuler, size);
@@ -219,11 +261,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
 
-    // Raycast ONLY against exterior paint body meshes (excluding glass & windows)
-    const validMeshes = paintMeshesRef.current.filter((m) => {
-      const n = m.name.toLowerCase();
-      return !n.includes('glass') && !n.includes('window') && !n.includes('windshield');
-    });
+    // Raycast ONLY against exterior paint body meshes (excluding lights, headlights, taillights, glass & windows)
+    const validMeshes = paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
 
     const intersects = raycaster.intersectObjects(validMeshes, true);
 
@@ -399,16 +438,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         scene.add(loaded.group);
         carGroupRef.current = loaded.group;
 
-        // Collect ONLY exterior paint body meshes for decals & raycasting (strictly no glass)
-        paintMeshesRef.current = loaded.paintMeshes && loaded.paintMeshes.length > 0 ? loaded.paintMeshes : [];
+        // Collect ONLY exterior paint body meshes for decals & raycasting (strictly no lights, no glass)
+        paintMeshesRef.current = (loaded.paintMeshes || []).filter((m) => !isMeshForbidden(m));
         if (paintMeshesRef.current.length === 0) {
           const meshes: THREE.Mesh[] = [];
           loaded.group.traverse((c) => {
-            if ((c as THREE.Mesh).isMesh) {
-              const n = c.name.toLowerCase();
-              if (!n.includes('glass') && !n.includes('window') && !n.includes('windshield') && !n.includes('wheel')) {
-                meshes.push(c as THREE.Mesh);
-              }
+            if ((c as THREE.Mesh).isMesh && !isMeshForbidden(c as THREE.Mesh)) {
+              meshes.push(c as THREE.Mesh);
             }
           });
           paintMeshesRef.current = meshes;
@@ -422,11 +458,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         carGroupRef.current = fallbackGroup;
         const meshes: THREE.Mesh[] = [];
         fallbackGroup.traverse((c) => {
-          if ((c as THREE.Mesh).isMesh) {
-            const n = c.name.toLowerCase();
-            if (!n.includes('glass') && !n.includes('window')) {
-              meshes.push(c as THREE.Mesh);
-            }
+          if ((c as THREE.Mesh).isMesh && !isMeshForbidden(c as THREE.Mesh)) {
+            meshes.push(c as THREE.Mesh);
           }
         });
         paintMeshesRef.current = meshes;
@@ -440,11 +473,9 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       animId = requestAnimationFrame(animate);
 
       if (isPointerDownRef.current && interactMode === 'orbitCamera') {
-        // Direct snappy camera update on drag
         camera.position.copy(targetCameraPosRef.current);
         camera.lookAt(currentLookAtRef.current);
       } else {
-        // Smooth lerp when moving between camera angles
         camera.position.lerp(targetCameraPosRef.current, 0.08);
         currentLookAtRef.current.lerp(targetLookAtRef.current, 0.08);
         camera.lookAt(currentLookAtRef.current);
@@ -496,6 +527,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     draftSponsor.heightCm,
     draftSponsor.logoUrl,
     draftSponsor.tier,
+    draftSponsor.flipX,
+    draftSponsor.flipY,
+    draftSponsor.filterStyle,
+    draftSponsor.opacity,
     rotationAngle,
     draftSponsor.rotationAngle,
     projectDecal,
@@ -544,8 +579,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       );
 
       paintMeshesRef.current.forEach((mesh) => {
-        const name = mesh.name.toLowerCase();
-        if (name.includes('glass') || name.includes('window') || name.includes('windshield')) return;
+        if (isMeshForbidden(mesh)) return;
 
         try {
           const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);

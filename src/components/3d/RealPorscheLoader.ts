@@ -115,11 +115,28 @@ export const loadRealPorscheModel = (
               name.includes('cristal') ||
               name.includes('vidrio') ||
               name.includes('light') ||
+              name.includes('headlight') ||
+              name.includes('taillight') ||
               name.includes('lamp') ||
+              name.includes('faro') ||
+              name.includes('calavera') ||
+              name.includes('lens') ||
+              name.includes('reflector') ||
+              name.includes('signal') ||
+              name.includes('turn') ||
+              name.includes('indicator') ||
+              name.includes('led') ||
+              name.includes('fog') ||
+              name.includes('stop') ||
+              name.includes('drl') ||
+              name.includes('optic') ||
               matName.includes('glass') ||
               matName.includes('window') ||
               matName.includes('windshield') ||
-              matName.includes('lights')
+              matName.includes('lights') ||
+              matName.includes('light') ||
+              matName.includes('lamp') ||
+              matName.includes('lens')
             ) {
               mesh.material = silhouetteGlassMaterial;
             } else if (
