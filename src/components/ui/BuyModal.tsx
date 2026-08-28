@@ -501,33 +501,27 @@ export const BuyModal: React.FC = () => {
                   </div>
 
                   {viewDimension === '3d' && (
-                    <div className="grid grid-cols-2 gap-2 p-1 bg-neutral-100/70 rounded-2xl border border-black/10">
-                      <button
-                        type="button"
-                        onClick={() => setInteractMode('orbitCamera')}
-                        className={`py-1.5 px-3 rounded-xl text-[11px] font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                          interactMode === 'orbitCamera'
-                            ? 'bg-white text-neutral-950 font-bold shadow-xs border border-black/10'
-                            : 'text-neutral-600 hover:text-neutral-900'
-                        }`}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Girar Auto 3D</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setInteractMode('moveLogo')}
-                        className={`py-1.5 px-3 rounded-xl text-[11px] font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                          interactMode === 'moveLogo'
-                            ? 'bg-sky-600 text-white font-bold shadow-xs'
-                            : 'text-neutral-600 hover:text-neutral-900'
-                        }`}
-                      >
-                        <Move className="w-3.5 h-3.5" />
-                        <span>Mover Logo</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setInteractMode(interactMode === 'moveLogo' ? 'orbitCamera' : 'moveLogo')}
+                      className={`w-full py-2 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-2 border shadow-xs ${
+                        interactMode === 'moveLogo'
+                          ? 'bg-sky-50 text-sky-700 border-sky-300 font-bold hover:bg-sky-100'
+                          : 'bg-amber-50 text-amber-800 border-amber-300 font-bold hover:bg-amber-100'
+                      }`}
+                    >
+                      {interactMode === 'moveLogo' ? (
+                        <>
+                          <Move className="w-3.5 h-3.5 text-sky-600" />
+                          <span>✋ Modo: Mover Logo · (Clic para Girar Auto)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3.5 h-3.5 text-amber-600" />
+                          <span>👁️ Modo: Girar Auto · (Clic para Mover Logo)</span>
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               </div>

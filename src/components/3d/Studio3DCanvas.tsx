@@ -689,34 +689,29 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       {/* Floating Top Mode Selector: Orbit Camera vs Drag Logo */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         
-        {/* Prominent Mode Switcher */}
-        <div className="bg-neutral-900/95 backdrop-blur-md border border-white/15 p-1 rounded-2xl flex items-center gap-1 shadow-2xl pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => setInteractMode('orbitCamera')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-mono transition cursor-pointer flex items-center gap-2 ${
-              interactMode === 'orbitCamera'
-                ? 'bg-white text-neutral-950 font-bold shadow-md'
-                : 'text-neutral-300 hover:text-white'
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            <span>👁️ Girar / Mover Vista 3D</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setInteractMode('moveLogo')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-mono transition cursor-pointer flex items-center gap-2 ${
-              interactMode === 'moveLogo'
-                ? 'bg-sky-500 text-white font-bold shadow-md'
-                : 'text-neutral-300 hover:text-white'
-            }`}
-          >
-            <Move className="w-4 h-4" />
-            <span>✋ Mover Logo en el Auto</span>
-          </button>
-        </div>
+        {/* Unified Single Mode Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setInteractMode(interactMode === 'moveLogo' ? 'orbitCamera' : 'moveLogo')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-mono transition cursor-pointer flex items-center gap-2.5 border shadow-2xl backdrop-blur-md pointer-events-auto ${
+            interactMode === 'moveLogo'
+              ? 'bg-sky-500 hover:bg-sky-400 text-white border-sky-400 font-bold'
+              : 'bg-neutral-900/95 hover:bg-neutral-800 text-amber-300 border-amber-400/40 font-bold'
+          }`}
+          title="Haz clic para alternar entre mover el logo o girar la vista 3D"
+        >
+          {interactMode === 'moveLogo' ? (
+            <>
+              <Move className="w-4 h-4" />
+              <span>✋ Modo: Mover Logo <span className="opacity-75 font-normal text-[11px]">(Clic para Girar Auto)</span></span>
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4 text-amber-400" />
+              <span>👁️ Modo: Girar Auto <span className="opacity-75 font-normal text-[11px]">(Clic para Mover Logo)</span></span>
+            </>
+          )}
+        </button>
 
         {/* Live Detected Zone Badge & Auto-Rotate Toggle */}
         <div className="flex items-center gap-2 pointer-events-auto">
