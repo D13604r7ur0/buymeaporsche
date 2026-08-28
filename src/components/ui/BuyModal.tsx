@@ -64,7 +64,7 @@ export const BuyModal: React.FC = () => {
   // Advanced Livery Tools state
   const [flipX, setFlipX] = useState<boolean>(false);
   const [flipY, setFlipY] = useState<boolean>(false);
-  const [filterStyle, setFilterStyle] = useState<'original' | 'white' | 'black'>('original');
+  const filterStyle = 'original';
   const [opacity, setOpacity] = useState<number>(1.0);
   
   const [accountName, setAccountName] = useState<string>(draftSponsor?.sponsorName || draftSponsor?.brandName || '');
@@ -818,39 +818,7 @@ export const BuyModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Vinyl Color Style Filter */}
-                <div className="space-y-1.5 pt-2 border-t border-black/[0.06]">
-                  <span className="text-[11px] font-mono text-neutral-500 block">Estilo de Color del Vinil:</span>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setFilterStyle('original')}
-                      className={`py-1.5 px-2 rounded-xl text-[11px] font-mono border transition cursor-pointer ${
-                        filterStyle === 'original' ? 'bg-neutral-900 text-white border-neutral-900 font-bold' : 'bg-white text-neutral-700 border-black/10'
-                      }`}
-                    >
-                      Full Color
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFilterStyle('white')}
-                      className={`py-1.5 px-2 rounded-xl text-[11px] font-mono border transition cursor-pointer ${
-                        filterStyle === 'white' ? 'bg-neutral-900 text-white border-neutral-900 font-bold' : 'bg-white text-neutral-700 border-black/10'
-                      }`}
-                    >
-                      Blanco Puro
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFilterStyle('black')}
-                      className={`py-1.5 px-2 rounded-xl text-[11px] font-mono border transition cursor-pointer ${
-                        filterStyle === 'black' ? 'bg-neutral-900 text-white border-neutral-900 font-bold' : 'bg-white text-neutral-700 border-black/10'
-                      }`}
-                    >
-                      Negro Mate
-                    </button>
-                  </div>
-                </div>
+
 
                 {/* Opacity Slider */}
                 <div className="space-y-1 pt-1">
