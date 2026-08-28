@@ -26,7 +26,8 @@ import {
   Sliders,
   Maximize2,
   Box,
-  Layers
+  Layers,
+  Globe
 } from 'lucide-react';
 
 const CM2_PRESETS = [
@@ -69,7 +70,7 @@ export const BuyModal: React.FC = () => {
   
   const [accountName, setAccountName] = useState<string>(draftSponsor?.sponsorName || draftSponsor?.brandName || '');
   const [slogan, setSlogan] = useState<string>(draftSponsor?.slogan || '');
-  const targetUrl = draftSponsor?.targetUrl || 'https://buymeaporsche.com';
+  const [targetUrl, setTargetUrl] = useState<string>(draftSponsor?.targetUrl || '');
   const email = draftSponsor?.email || 'contacto@sponsor.com';
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(draftSponsor?.logoUrl || '');
   const [cameraViewTrigger, setCameraViewTrigger] = useState<string>('hood');
@@ -980,6 +981,73 @@ export const BuyModal: React.FC = () => {
                     onChange={(e) => setSlogan(e.target.value)}
                     className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                   />
+                </div>
+              </div>
+
+              {/* Enlace / Web / Red Social de Destino */}
+              <div className="space-y-2 bg-[#fafafa] p-3.5 rounded-2xl border border-black/[0.06]">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-neutral-800 font-bold flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Enlace o Red Social a donde quieras dirigir:</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-sky-600 font-semibold bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                    Clickeable 3D
+                  </span>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Ej. instagram.com/tu_cuenta, wa.me/52..., youtube.com/@..., etc."
+                  value={targetUrl}
+                  onChange={(e) => setTargetUrl(e.target.value)}
+                  className="w-full bg-white border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900 font-mono"
+                />
+
+                {/* Quick URL Prefix Helpers */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setTargetUrl('https://instagram.com/')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 border border-black/10 text-[10px] font-mono text-neutral-700 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <span>📸 Instagram</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetUrl('https://tiktok.com/@')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 border border-black/10 text-[10px] font-mono text-neutral-700 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <span>🎵 TikTok</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetUrl('https://wa.me/52')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 border border-black/10 text-[10px] font-mono text-neutral-700 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <span>💬 WhatsApp</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetUrl('https://x.com/')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 border border-black/10 text-[10px] font-mono text-neutral-700 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <span>✖️ X (Twitter)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetUrl('https://youtube.com/@')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 border border-black/10 text-[10px] font-mono text-neutral-700 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <span>▶️ YouTube</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetUrl('https://')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 border border-black/10 text-[10px] font-mono text-neutral-700 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <span>🌐 Sitio Web</span>
+                  </button>
                 </div>
               </div>
 

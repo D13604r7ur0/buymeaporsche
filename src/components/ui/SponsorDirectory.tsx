@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSponsors } from '../../context/SponsorContext';
-import { Search, Camera, Plus } from 'lucide-react';
+import { Search, Camera, Plus, ExternalLink } from 'lucide-react';
 
 export const SponsorDirectory: React.FC<{ onNavigateTo3D: () => void }> = ({ onNavigateTo3D }) => {
   const {
@@ -188,6 +188,18 @@ export const SponsorDirectory: React.FC<{ onNavigateTo3D: () => void }> = ({ onN
                   >
                     Perfil
                   </button>
+
+                  {sponsor.targetUrl && (
+                    <a
+                      href={sponsor.targetUrl.startsWith('http') ? sponsor.targetUrl : `https://${sponsor.targetUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 bg-[#fafafa] hover:bg-neutral-900 hover:text-white text-neutral-600 rounded-xl border border-black/[0.06] text-xs transition flex items-center justify-center cursor-pointer"
+                      title="Visitar Enlace Directo"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                 </div>
               </div>
             ))}

@@ -650,6 +650,13 @@ export const PorscheScene: React.FC = () => {
               <span className="text-neutral-500">{activeTooltip.sponsor.areaCm2} cm²</span>
               <span className="text-neutral-900 font-semibold">${activeTooltip.sponsor.totalPriceMxn.toLocaleString()} MXN</span>
             </div>
+
+            {activeTooltip.sponsor.targetUrl && (
+              <div className="pt-1.5 mt-1 border-t border-black/5 flex items-center justify-between text-[9px] font-mono text-sky-600 font-semibold">
+                <span className="truncate max-w-[130px]">{activeTooltip.sponsor.targetUrl.replace(/^https?:\/\//, '')}</span>
+                <span className="text-neutral-400">Clic para abrir ↗</span>
+              </div>
+            )}
           </div>
         </div>
       )}
