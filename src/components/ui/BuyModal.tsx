@@ -8,16 +8,13 @@ import {
   ArrowRight, 
   ArrowLeft, 
   ShieldCheck, 
-  MousePointerClick, 
   CreditCard,
   QrCode,
   Building2,
   Coins,
   CheckCircle2,
-  Award,
   Sparkles,
-  Eye,
-  Sliders
+  Eye
 } from 'lucide-react';
 
 const CATEGORIES: SponsorCategory[] = [
@@ -54,11 +51,9 @@ export const BuyModal: React.FC = () => {
     setIsBuyModalOpen,
     draftSponsor,
     setDraftSponsor,
-    setIsPlacementMode,
     addSponsor,
     setCameraPreset,
     focusSponsor,
-    setCertificateSponsor,
   } = useSponsors();
 
   // Wizard state
@@ -115,6 +110,8 @@ export const BuyModal: React.FC = () => {
       stickerBgColor,
       stickerBorderColor,
       logoScale,
+      email,
+      category,
     });
   }, [
     widthCm,
@@ -127,6 +124,8 @@ export const BuyModal: React.FC = () => {
     stickerBgColor,
     stickerBorderColor,
     logoScale,
+    email,
+    category,
     isBuyModalOpen,
   ]);
 
@@ -306,7 +305,7 @@ export const BuyModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Upload Logo + Links */}
+              {/* Upload Logo + Scale */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-mono text-neutral-500 block mb-1">Subir Imagen o Logotipo (PNG/JPG):</label>
@@ -332,6 +331,25 @@ export const BuyModal: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="text-xs font-mono text-neutral-500 block mb-1">Escala del Logo en el Sticker:</label>
+                  <div className="p-3 rounded-xl bg-[#fafafa] border border-black/10 flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={1.5}
+                      step={0.05}
+                      value={logoScale}
+                      onChange={(e) => setLogoScale(Number(e.target.value))}
+                      className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
+                    />
+                    <span className="text-xs font-mono text-neutral-700 w-10 text-right">{logoScale}x</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Links + Contact */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <label className="text-xs font-mono text-neutral-500 block mb-1">Sitio Web Oficial:</label>
                   <input
                     type="url"
@@ -341,6 +359,31 @@ export const BuyModal: React.FC = () => {
                     className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                   />
                 </div>
+
+                <div>
+                  <label className="text-xs font-mono text-neutral-500 block mb-1">Email de Contacto:</label>
+                  <input
+                    type="email"
+                    placeholder="contacto@tumarca.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="text-xs font-mono text-neutral-500 block mb-1">Categoría del Patrocinador:</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as SponsorCategory)}
+                  className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900 cursor-pointer"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Color Styling */}
