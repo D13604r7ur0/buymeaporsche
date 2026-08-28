@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
-import { Eye, Plus, Sparkles, User, ArrowUpRight } from 'lucide-react';
+import { Eye, Plus, Sparkles, User, ArrowUpRight, Trophy } from 'lucide-react';
 
 export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () => {
   const {
@@ -9,9 +9,9 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
     setIsBuyModalOpen,
   } = useSponsors();
 
-  // Sorted strictly by sticker size (cm²) descending
+  // Sorted strictly by contribution amount ($MXN) descending
   const sortedSponsors = useMemo(() => {
-    return [...sponsors].sort((a, b) => b.areaCm2 - a.areaCm2);
+    return [...sponsors].sort((a, b) => b.totalPriceMxn - a.totalPriceMxn);
   }, [sponsors]);
 
   return (
@@ -21,14 +21,15 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-[11px] font-mono tracking-widest uppercase text-neutral-500 block mb-1">
-              Comunidad Oficial
+            <span className="text-[11px] font-mono tracking-widest uppercase text-neutral-500 block mb-1 flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <span>Tabla Oficial de Posiciones</span>
             </span>
             <h2 className="text-2xl sm:text-3xl font-heading font-bold text-neutral-900 tracking-tight">
-              Patrocinadores
+              Ranking de Patrocinadores
             </h2>
             <p className="text-xs text-neutral-500 mt-1 font-sans">
-              Ordenados exclusivamente por tamaño de espacio adquirido ($cm^2$) en el Porsche 911.
+              Ordenados exclusivamente por monto de aportación económica ($MXN) a la campaña.
             </p>
           </div>
 
@@ -44,27 +45,27 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
         {/* Empty State */}
         {sortedSponsors.length === 0 ? (
           <div className="p-10 sm:p-12 text-center border border-dashed border-black/15 rounded-3xl bg-[#fafafa] space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-100 text-neutral-800 flex items-center justify-center mx-auto text-xl shadow-xs">
-              🏎️
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto text-xl shadow-xs">
+              👑
             </div>
             <div className="space-y-1">
               <h3 className="text-sm font-heading font-bold text-neutral-900">
-                Aún no hay patrocinadores registrados
+                La posición #1 del Ranking está disponible
               </h3>
               <p className="text-xs text-neutral-500 max-w-sm mx-auto font-sans leading-relaxed">
-                Sé el primero en colocar tu nombre y logotipo en la carrocería del Porsche 911 (992).
+                Aún no hay patrocinadores registrados. Sube tu logo y sé el patrocinador líder en el Porsche 911 (992).
               </p>
             </div>
             <button
               onClick={() => setIsBuyModalOpen(true)}
               className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold px-5 py-2.5 rounded-full transition shadow-sm cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Colocar mi Logo</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Conquistar la Posición #1</span>
             </button>
           </div>
         ) : (
-          /* Simple List */
+          /* Simple List Sorted by Aportación ($MXN) */
           <div className="divide-y divide-black/[0.06] border-y border-black/[0.06]">
             {sortedSponsors.map((sponsor, index) => {
               const displayName = sponsor.sponsorName || sponsor.brandName;
@@ -77,7 +78,9 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
                 >
                   {/* Left: Rank, Avatar & Account Name */}
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <span className="font-mono text-xs font-semibold text-neutral-400 w-6 text-center shrink-0">
+                    <span className={`font-mono text-xs font-bold w-7 text-center shrink-0 ${
+                      index === 0 ? 'text-amber-500' : index === 1 ? 'text-slate-500' : index === 2 ? 'text-amber-700' : 'text-neutral-400'
+                    }`}>
                       #{index + 1}
                     </span>
 
@@ -107,14 +110,14 @@ export const SimpleSponsorList: React.FC<{ onNavigateTo3D?: () => void }> = () =
                     </div>
                   </div>
 
-                  {/* Right: Size (cm²) & 3D Action */}
+                  {/* Right: Aportación ($MXN), Size & 3D Action */}
                   <div className="flex items-center gap-4 shrink-0 font-mono text-xs">
                     <div className="text-right">
                       <span className="font-bold text-neutral-900 text-sm block">
-                        {sponsor.areaCm2.toLocaleString()} cm²
+                        ${sponsor.totalPriceMxn.toLocaleString()} MXN
                       </span>
                       <span className="text-[10px] text-neutral-400 font-normal">
-                        {sponsor.zoneName}
+                        {sponsor.areaCm2.toLocaleString()} cm² · {sponsor.zoneName}
                       </span>
                     </div>
 

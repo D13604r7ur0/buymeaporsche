@@ -62,8 +62,8 @@ export const Header: React.FC<HeaderProps> = () => {
             onClick={() => scrollTo('sponsors')}
             className="hover:text-neutral-900 transition cursor-pointer flex items-center gap-1"
           >
-            <span>Patrocinadores</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Ranking</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
           </button>
 
           <button
