@@ -5,6 +5,7 @@ import { PorscheScene } from './components/3d/PorscheScene';
 import { WhatYouPayBreakdown } from './components/ui/WhatYouPayBreakdown';
 import { EventExpositionRoadmap } from './components/ui/EventExpositionRoadmap';
 import { SponsorDirectory } from './components/ui/SponsorDirectory';
+import { LeaderboardRanking } from './components/ui/LeaderboardRanking';
 import { BuyModal } from './components/ui/BuyModal';
 import { SponsorDetailModal } from './components/ui/SponsorDetailModal';
 import { PorscheConfigurator } from './components/ui/PorscheConfigurator';
@@ -86,6 +87,11 @@ const MainApp: React.FC = () => {
         {/* Section: Event Exposition Roadmap */}
         <div id="events">
           <EventExpositionRoadmap onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+        </div>
+
+        {/* Section: Leaderboard & Ranking by cm2 Size */}
+        <div id="ranking">
+          <LeaderboardRanking onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         </div>
 
         {/* Section: Sponsors Hall of Fame */}

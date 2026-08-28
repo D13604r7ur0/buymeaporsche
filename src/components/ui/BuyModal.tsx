@@ -76,6 +76,7 @@ export const BuyModal: React.FC = () => {
   const [aspectRatio, setAspectRatio] = useState<number>(35 / 20);
   
   const [brandName, setBrandName] = useState<string>(draftSponsor?.brandName || '');
+  const [sponsorName, setSponsorName] = useState<string>(draftSponsor?.sponsorName || '');
   const [slogan, setSlogan] = useState<string>(draftSponsor?.slogan || '');
   const [targetUrl, setTargetUrl] = useState<string>(draftSponsor?.targetUrl || 'https://');
   const [email, setEmail] = useState<string>(draftSponsor?.email || '');
@@ -110,6 +111,7 @@ export const BuyModal: React.FC = () => {
 
     setDraftSponsor({
       brandName: brandName || 'TU MARCA',
+      sponsorName: sponsorName || '',
       slogan: slogan || 'Patrocinador Oficial Porsche 911',
       targetUrl: targetUrl || 'buymeaporsche.com',
       logoUrl: logoPreviewUrl,
@@ -134,6 +136,7 @@ export const BuyModal: React.FC = () => {
     heightCm,
     selectedTier,
     brandName,
+    sponsorName,
     slogan,
     targetUrl,
     logoPreviewUrl,
@@ -225,6 +228,7 @@ export const BuyModal: React.FC = () => {
   const handleAutoFillDemo = () => {
     sounds.playClickSound();
     setBrandName('Apex Motors AI');
+    setSponsorName('Diego Arturo');
     setSlogan('Tecnología de Inteligencia Artificial para Pista');
     setTargetUrl('https://apex-motors.ai');
     setEmail('sponsor@apex-motors.ai');
@@ -235,7 +239,7 @@ export const BuyModal: React.FC = () => {
     setStickerBgColor('#0a0c10');
     setStickerBorderColor('#ffffff');
     setLogoPreviewUrl('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80');
-    setCardHolder('DIRECCIÓN APEX MOTORS');
+    setCardHolder('DIEGO ARTURO');
   };
 
   const handleExecutePayment = () => {
@@ -245,6 +249,7 @@ export const BuyModal: React.FC = () => {
     setTimeout(() => {
       const created = addSponsor({
         brandName: brandName.trim() || 'Marca Patrocinadora',
+        sponsorName: sponsorName.trim() || brandName.trim(),
         slogan: slogan.trim() || 'Patrocinador oficial Porsche 911 (992)',
         logoUrl: logoPreviewUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
         targetUrl: targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`,
@@ -555,17 +560,28 @@ export const BuyModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Brand Text Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Brand and Personal Names */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Nombre de la Marca *</label>
+                  <label className="text-xs font-mono text-neutral-500 block mb-1">Nombre de la Marca / Empresa *</label>
                   <input
                     type="text"
                     required
                     placeholder="Ej. Apex Dynamics"
                     value={brandName}
                     onChange={(e) => setBrandName(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-mono text-neutral-500 block mb-1">Tu Nombre / Patrocinador (Opcional):</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Diego Arturo"
+                    value={sponsorName}
+                    onChange={(e) => setSponsorName(e.target.value)}
+                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                   />
                 </div>
 
@@ -573,10 +589,10 @@ export const BuyModal: React.FC = () => {
                   <label className="text-xs font-mono text-neutral-500 block mb-1">Slogan o Mensaje *</label>
                   <input
                     type="text"
-                    placeholder="Ej. Tecnología Automotriz del Futuro"
+                    placeholder="Ej. Tecnología de Pistas"
                     value={slogan}
                     onChange={(e) => setSlogan(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
                   />
                 </div>
               </div>

@@ -14,6 +14,7 @@ export type SponsorCategory =
 export interface Sponsor {
   id: string;
   brandName: string;
+  sponsorName?: string; // Nombre del patrocinador o persona
   slogan: string;
   logoUrl: string;
   targetUrl: string;

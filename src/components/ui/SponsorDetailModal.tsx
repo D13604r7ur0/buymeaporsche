@@ -54,6 +54,11 @@ export const SponsorDetailModal: React.FC = () => {
               <h2 className="text-xl font-heading font-bold text-neutral-900">
                 {selectedSponsor.brandName}
               </h2>
+              {selectedSponsor.sponsorName && (
+                <span className="text-xs text-neutral-500 font-sans block">
+                  Patrocinador: <strong className="text-neutral-800 font-medium">{selectedSponsor.sponsorName}</strong>
+                </span>
+              )}
             </div>
           </div>
 
