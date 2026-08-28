@@ -102,8 +102,25 @@ export const SponsorDirectory: React.FC<{ onNavigateTo3D: () => void }> = ({ onN
 
         {/* Sponsors Grid */}
         {filteredSponsors.length === 0 ? (
-          <div className="p-12 text-center border border-black/[0.06] rounded-2xl bg-[#fafafa]">
-            <span className="text-xs text-neutral-500 font-mono">No se encontraron marcas en esta categoría.</span>
+          <div className="p-12 sm:p-16 text-center border border-dashed border-black/15 rounded-3xl bg-[#fafafa] space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-800 flex items-center justify-center mx-auto text-2xl shadow-sm">
+              🏎️
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-heading font-bold text-neutral-900">
+                Sé el primer patrocinador oficial en el Porsche 911
+              </h3>
+              <p className="text-xs text-neutral-500 max-w-md mx-auto font-sans leading-relaxed">
+                Los 120,000 cm² de la carrocería están 100% disponibles. Elige tu zona (cofre, puertas, alerón), sube tu logo y asegura tu presencia por 2 años.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsBuyModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold px-6 py-2.5 rounded-full transition shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Colocar mi Logo en el Auto</span>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">

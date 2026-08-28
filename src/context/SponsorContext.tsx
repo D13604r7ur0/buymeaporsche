@@ -88,7 +88,7 @@ interface SponsorContextType {
   setCertificateSponsor: (sponsor: Sponsor | null) => void;
 }
 
-const STORAGE_KEY = 'buymeaporsche_gt3rs_sponsors_v1';
+const STORAGE_KEY = 'buymeaporsche_production_sponsors_v3';
 
 const SponsorContext = createContext<SponsorContextType | undefined>(undefined);
 
