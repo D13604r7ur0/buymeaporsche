@@ -257,23 +257,7 @@ export const PorscheScene: React.FC = () => {
     };
   }, [getCameraTargets]);
 
-  // Update Body Paint & Wheel finishes
-  useEffect(() => {
-    const newPaintColor = new THREE.Color(carConfig.bodyColor);
-    const newWheelColor = new THREE.Color(carConfig.wheelColor);
 
-    paintMeshesRef.current.forEach((mesh) => {
-      if (mesh.material && (mesh.material as THREE.MeshPhysicalMaterial).color) {
-        (mesh.material as THREE.MeshPhysicalMaterial).color.copy(newPaintColor);
-      }
-    });
-
-    wheelMeshesRef.current.forEach((mesh) => {
-      if (mesh.material && (mesh.material as THREE.MeshStandardMaterial).color) {
-        (mesh.material as THREE.MeshStandardMaterial).color.copy(newWheelColor);
-      }
-    });
-  }, [carConfig]);
 
   // Render Sponsor Decals & 3D Interactive Hotspot Pins
   useEffect(() => {

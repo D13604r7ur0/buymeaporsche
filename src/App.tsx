@@ -8,14 +8,12 @@ import { SponsorDirectory } from './components/ui/SponsorDirectory';
 import { LeaderboardRanking } from './components/ui/LeaderboardRanking';
 import { BuyModal } from './components/ui/BuyModal';
 import { SponsorDetailModal } from './components/ui/SponsorDetailModal';
-import { PorscheConfigurator } from './components/ui/PorscheConfigurator';
 import { CertificateModal } from './components/ui/CertificateModal';
 import { useSponsors } from './context/SponsorContext';
 import { ChevronDown } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'3d' | 'roi' | 'events' | 'directory'>('3d');
-  const [isConfiguratorOpen, setIsConfiguratorOpen] = useState<boolean>(false);
   
   const {
     totalRaisedMxn,
@@ -40,7 +38,6 @@ const MainApp: React.FC = () => {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenConfigurator={() => setIsConfiguratorOpen(true)}
       />
 
       {/* 1. HERO SECTION: 100VH FULLSCREEN 3D PORSCHE (FIRST THING YOU SEE) */}
@@ -165,10 +162,6 @@ const MainApp: React.FC = () => {
       {/* Modals */}
       <BuyModal />
       <SponsorDetailModal />
-      <PorscheConfigurator
-        isOpen={isConfiguratorOpen}
-        onClose={() => setIsConfiguratorOpen(false)}
-      />
       <CertificateModal />
 
     </div>

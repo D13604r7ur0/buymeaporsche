@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
 import { sounds } from '../../utils/soundEffects';
-import { Palette, Plus, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Volume2, VolumeX } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: '3d' | 'roi' | 'events' | 'directory';
   setActiveTab: (tab: '3d' | 'roi' | 'events' | 'directory') => void;
-  onOpenConfigurator: () => void;
+  onOpenConfigurator?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  onOpenConfigurator,
-}) => {
+export const Header: React.FC<HeaderProps> = () => {
   const {
     setIsBuyModalOpen,
   } = useSponsors();
@@ -103,15 +101,6 @@ export const Header: React.FC<HeaderProps> = ({
             title={isMuted ? 'Activar sonido' : 'Silenciar sonido'}
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-          </button>
-
-          <button
-            onClick={onOpenConfigurator}
-            className="px-3 py-1.5 rounded-full bg-black/[0.04] hover:bg-black/[0.08] text-neutral-700 hover:text-neutral-900 border border-black/[0.06] transition text-xs font-medium flex items-center gap-1.5 cursor-pointer"
-            title="Personalizar Color"
-          >
-            <Palette className="w-3.5 h-3.5" />
-            <span className="text-[11px]">Color</span>
           </button>
 
           <button
