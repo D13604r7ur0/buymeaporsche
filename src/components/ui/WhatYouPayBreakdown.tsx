@@ -1,88 +1,46 @@
 import React, { useState } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
-import { SIZE_COMPARISONS, CONTRACT_DAYS, ZONES } from '../../utils/sampleData';
+import { CONTRACT_DAYS, ZONES } from '../../utils/sampleData';
 import type { SponsorTier } from '../../types/sponsor';
-import { 
-  CreditCard, 
-  Smartphone, 
-  Tablet, 
-  Monitor, 
-  Trophy, 
-  ArrowRight
-} from 'lucide-react';
+import { ArrowRight, Calculator, Sparkles } from 'lucide-react';
 
 export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = () => {
 
   const {
     setIsBuyModalOpen,
     setDraftSponsor,
-    setCameraPreset,
     totalAreaSoldCm2,
     totalAvailableCm2,
     remainingAreaCm2,
     areaSoldPercentage,
   } = useSponsors();
 
-  const [customWidth, setCustomWidth] = useState<number>(15);
-  const [customHeight, setCustomHeight] = useState<number>(15);
-  const [selectedZoneTier, setSelectedZoneTier] = useState<SponsorTier>('premium_door');
+  const [customWidth, setCustomWidth] = useState<number>(35);
+  const [customHeight, setCustomHeight] = useState<number>(20);
+  const [selectedZoneTier, setSelectedZoneTier] = useState<SponsorTier>('hood_central');
 
-  const currentZone = ZONES.find((z) => z.id === selectedZoneTier) || ZONES[2];
+  const currentZone = ZONES.find((z) => z.id === selectedZoneTier) || ZONES[1];
   const customArea = customWidth * customHeight;
   const customTotalMxn = customArea * currentZone.pricePerCm2;
   const customDailyCost = customTotalMxn / CONTRACT_DAYS;
   const customMonthlyCost = customDailyCost * 30.4;
 
-  const handleSelectPreset = (comparison: typeof SIZE_COMPARISONS[0]) => {
-    const tier: SponsorTier = comparison.cm2 > 2000 ? 'vip_wing' : comparison.cm2 > 800 ? 'premium_door' : 'body_standard';
-    const zone = ZONES.find((z) => z.id === tier) || ZONES[0];
-    
-    setDraftSponsor({
-      widthCm: Math.round(Math.sqrt(comparison.cm2 * 1.5)),
-      heightCm: Math.round(Math.sqrt(comparison.cm2 / 1.5)),
-      areaCm2: comparison.cm2,
-      pricePerCm2: zone.pricePerCm2,
-      totalPriceMxn: comparison.totalMxn,
-      tier: zone.id,
-      zoneName: zone.name,
-      position3D: zone.defaultPosition,
-      rotation3D: zone.defaultRotation,
-      scale3D: zone.defaultScale,
-    });
-
-    if (tier === 'vip_wing') setCameraPreset('wing');
-    else if (tier === 'premium_door') setCameraPreset('door_right');
-    else setCameraPreset('overview');
-
-    setIsBuyModalOpen(true);
-  };
-
-  const getIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'CreditCard': return <CreditCard className="w-4 h-4" />;
-      case 'Smartphone': return <Smartphone className="w-4 h-4" />;
-      case 'Tablet': return <Tablet className="w-4 h-4" />;
-      case 'Monitor': return <Monitor className="w-4 h-4" />;
-      case 'Trophy': return <Trophy className="w-4 h-4" />;
-      default: return <CreditCard className="w-4 h-4" />;
-    }
-  };
-
   return (
-    <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-white border-t border-black/[0.06]">
+    <section id="calculator" className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-white border-t border-black/[0.06]">
       <div className="max-w-7xl mx-auto">
         
         {/* Title & Capacity Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
           <div className="max-w-2xl">
-            <span className="text-[11px] font-mono tracking-widest uppercase text-neutral-500 block mb-2">
-              Transparencia & Retorno de Inversión
+            <span className="text-[11px] font-mono tracking-widest uppercase text-neutral-500 block mb-2 flex items-center gap-1.5">
+              <Calculator className="w-3.5 h-3.5 text-neutral-800" />
+              <span>Calculadora de Superficie & Retorno de Inversión</span>
             </span>
             <h2 className="text-3xl sm:text-4xl font-heading font-bold text-neutral-900 tracking-tight">
               ¿Qué estás pagando exactamente?
             </h2>
             <p className="text-sm text-neutral-500 mt-2 font-sans">
-              Superficie total limitada a <strong>{totalAvailableCm2.toLocaleString()} cm² (12 m²)</strong> en la carrocería del <strong>Porsche 911 (992)</strong> durante los <strong>2 años ({CONTRACT_DAYS} días)</strong> de contrato.
+              El costo se calcula estrictamente por centímetro cuadrado ($cm^2$) de tu diseño en la carrocería del <strong>Porsche 911 (992)</strong> durante los <strong>2 años ({CONTRACT_DAYS} días)</strong> de contrato.
             </p>
           </div>
 
@@ -108,74 +66,28 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
           </div>
         </div>
 
-        {/* 5 Minimalist Size Presets */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 mb-12">
-          {SIZE_COMPARISONS.map((item, idx) => (
-            <div
-              key={idx}
-              className="p-5 rounded-2xl bg-[#fafafa] border border-black/[0.06] hover:border-black/20 hover:shadow-sm transition-all duration-200 flex flex-col justify-between group"
-            >
-              <div>
-                <div className="w-8 h-8 rounded-full bg-neutral-100 text-neutral-700 flex items-center justify-center mb-3">
-                  {getIcon(item.iconName)}
-                </div>
-
-                <div className="text-xs font-semibold text-neutral-900 group-hover:text-neutral-700">
-                  {item.name}
-                </div>
-                <div className="text-[11px] text-neutral-500 font-sans mt-0.5">
-                  {item.objectComparison}
-                </div>
-
-                <div className="my-4 py-2 border-y border-black/[0.06] text-xs font-mono">
-                  <span className="text-neutral-500">{item.dimensions}</span>
-                  <span className="text-neutral-900 font-semibold block">{item.cm2} cm²</span>
-                </div>
-
-                <div className="space-y-0.5 my-2">
-                  <div className="text-[10px] font-mono uppercase text-neutral-400">Costo diario:</div>
-                  <div className="text-xl font-mono font-bold text-emerald-600">
-                    ${item.dailyCostMxn.toFixed(2)} <span className="text-[10px] text-neutral-500 font-normal">MXN/día</span>
-                  </div>
-                  <div className="text-[10px] text-neutral-500">
-                    ${item.totalMxn.toLocaleString()} MXN total
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleSelectPreset(item)}
-                className="w-full mt-4 bg-white hover:bg-neutral-900 text-neutral-800 hover:text-white border border-black/10 py-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Elegir</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Custom Dimension Slider */}
+        {/* Custom Dimension Slider Studio */}
         <div className="p-6 sm:p-8 rounded-3xl bg-[#fafafa] border border-black/[0.06] shadow-sm">
           <div className="max-w-3xl mb-8">
             <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mb-1">
-              Calculadora Dinámica
+              Calculadora Dinámica de Centímetros
             </span>
             <h3 className="text-xl font-heading font-bold text-neutral-900">
               Personaliza tus dimensiones exactas en centímetros
             </h3>
             <p className="text-xs text-neutral-500 mt-1">
-              Ajusta el ancho y alto deseado para calcular tu inversión en el Porsche 911.
+              Ajusta el ancho y alto deseado para calcular tu inversión en tiempo real.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            {/* Sliders */}
+            {/* Sliders and Zone Selector */}
             <div className="lg:col-span-7 space-y-6">
               
               {/* Zone selector */}
               <div>
-                <label className="text-xs font-mono text-neutral-500 block mb-2">Zona de la carrocería:</label>
+                <label className="text-xs font-mono text-neutral-500 block mb-2">Zona de la carrocería en el 911:</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {ZONES.filter(z => z.id !== 'showroom_floor').map((z) => (
                     <button
@@ -204,7 +116,7 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
                 </div>
                 <input
                   type="range"
-                  min={5}
+                  min={8}
                   max={120}
                   step={1}
                   value={customWidth}
@@ -273,13 +185,14 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
                       zoneName: currentZone.name,
                       position3D: currentZone.defaultPosition,
                       rotation3D: currentZone.defaultRotation,
-                      scale3D: [customWidth / 20, customHeight / 20, 1],
+                      scale3D: [customWidth / 25, customHeight / 25, 1],
                     });
                     setIsBuyModalOpen(true);
                   }}
-                  className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer text-xs flex items-center gap-1.5"
+                  className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer text-xs flex items-center gap-1.5 shadow-sm"
                 >
-                  <span>Apartar Espacio</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Subir Mi Logo</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

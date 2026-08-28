@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
 import type { SponsorTier, SponsorCategory } from '../../types/sponsor';
-import { ZONES, SIZE_COMPARISONS, CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
+import { ZONES, CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
 import { sounds } from '../../utils/soundEffects';
 import { 
   X, 
@@ -214,15 +214,6 @@ export const BuyModal: React.FC = () => {
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-  };
-
-  const handleApplyPreset = (preset: typeof SIZE_COMPARISONS[0]) => {
-    sounds.playClickSound();
-    const sideA = Math.round(Math.sqrt(preset.cm2 * 1.3));
-    const sideB = Math.round(preset.cm2 / sideA);
-    setWidthCm(sideA);
-    setHeightCm(sideB);
-    setAspectRatio(sideA / sideB);
   };
 
   const handleAutoFillDemo = () => {
@@ -540,23 +531,6 @@ export const BuyModal: React.FC = () => {
                     }}
                     className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
                   />
-                </div>
-              </div>
-
-              {/* Quick Presets */}
-              <div className="space-y-1.5">
-                <span className="text-xs font-mono text-neutral-500 block">Tamaños sugeridos:</span>
-                <div className="flex flex-wrap gap-2">
-                  {SIZE_COMPARISONS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleApplyPreset(preset)}
-                      className="px-3 py-1 rounded-full bg-[#fafafa] hover:bg-neutral-100 border border-black/[0.08] text-xs text-neutral-700 transition cursor-pointer"
-                    >
-                      {preset.name} ({preset.cm2} cm²)
-                    </button>
-                  ))}
                 </div>
               </div>
 
