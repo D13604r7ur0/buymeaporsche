@@ -7,7 +7,7 @@ import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
-import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus } from 'lucide-react';
+import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw } from 'lucide-react';
 
 interface Studio3DCanvasProps {
   draftSponsor: Partial<Sponsor>;
@@ -19,6 +19,8 @@ interface Studio3DCanvasProps {
     pricePerCm2: number;
   }) => void;
   onUpdateDimensions?: (widthCm: number, heightCm: number) => void;
+  rotationAngle?: number;
+  onUpdateRotationAngle?: (angle: number) => void;
   existingSponsors: Sponsor[];
   cameraViewTrigger?: string;
   interactMode?: 'moveLogo' | 'orbitCamera';
@@ -29,6 +31,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   draftSponsor,
   onUpdateDraftPosition,
   onUpdateDimensions,
+  rotationAngle = 0,
+  onUpdateRotationAngle,
   existingSponsors,
   cameraViewTrigger,
   interactMode: externalInteractMode,
@@ -48,8 +52,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   };
 
   // Ref to avoid stale closures during high-frequency drag events
-  const draftSponsorRef = useRef<Partial<Sponsor>>(draftSponsor);
-  draftSponsorRef.current = draftSponsor;
+  const draftSponsorRef = useRef<Partial<Sponsor>>({ ...draftSponsor, rotationAngle });
+  draftSponsorRef.current = { ...draftSponsor, rotationAngle };
 
   // Three.js instances
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -122,12 +126,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
   }, [cameraViewTrigger, setStudioCamera]);
 
-  // Project DecalGeometry exclusively onto paint body meshes (never glass)
+  // Project DecalGeometry exclusively onto paint body meshes with custom angle rotation
   const projectDecal = useCallback((
     pos: [number, number, number],
     rot: [number, number, number],
     widthCm: number,
     heightCm: number,
+    angleDeg: number,
     targetMesh?: THREE.Mesh
   ) => {
     const draftGroup = draftDecalGroupRef.current;
@@ -155,7 +160,21 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     });
 
     const position = new THREE.Vector3(...pos);
-    const orientation = new THREE.Euler(...rot, 'YXZ');
+    
+    // Construct orientation matrix from base euler + rotation angle around normal
+    const baseEuler = new THREE.Euler(...rot, 'YXZ');
+    const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
+    
+    // Normal vector is the Z axis of the orientation basis
+    const normal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
+    
+    if (angleDeg !== 0) {
+      const rotAngleRad = THREE.MathUtils.degToRad(angleDeg);
+      const rotMatrix = new THREE.Matrix4().makeRotationAxis(normal, rotAngleRad);
+      baseMatrix.premultiply(rotMatrix);
+    }
+
+    const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
     
     // Scale derived directly from centimeters
     const scaleFactor = 0.028;
@@ -165,14 +184,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
     const size = new THREE.Vector3(w, h, d);
 
-    // Create DecalGeometry exclusively on paint meshes
+    // Create DecalGeometry exclusively on paint meshes (never glass)
     meshesToProject.forEach((mesh) => {
-      // Ensure we NEVER project on glass or window meshes
       const name = mesh.name.toLowerCase();
       if (name.includes('glass') || name.includes('window') || name.includes('windshield')) return;
 
       try {
-        const decalGeo = new DecalGeometry(mesh, position, orientation, size);
+        const decalGeo = new DecalGeometry(mesh, position, finalEuler, size);
         const decalMesh = new THREE.Mesh(decalGeo, decalMat);
         draftGroup.add(decalMesh);
       } catch (err) {
@@ -185,7 +203,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const fallbackGeo = new THREE.PlaneGeometry(w, h);
       const fallbackMesh = new THREE.Mesh(fallbackGeo, decalMat);
       fallbackMesh.position.copy(position);
-      fallbackMesh.rotation.copy(orientation);
+      fallbackMesh.rotation.copy(finalEuler);
       draftGroup.add(fallbackMesh);
     }
   }, []);
@@ -309,11 +327,12 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
       const curW = draftSponsorRef.current?.widthCm || 35;
       const curH = draftSponsorRef.current?.heightCm || 20;
+      const curAngle = draftSponsorRef.current?.rotationAngle || rotationAngle || 0;
 
       // Project Decal directly onto the car body mesh
-      projectDecal(pos3D, rot3D, curW, curH, hit.object as THREE.Mesh);
+      projectDecal(pos3D, rot3D, curW, curH, curAngle, hit.object as THREE.Mesh);
     }
-  }, [onUpdateDraftPosition, projectDecal]);
+  }, [onUpdateDraftPosition, projectDecal, rotationAngle]);
 
   // Initialize Three.js Scene
   useEffect(() => {
@@ -458,7 +477,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     };
   }, [setStudioCamera, interactMode]);
 
-  // Re-project Decal immediately whenever props change (dimensions, position, rotation, logo)
+  // Re-project Decal immediately whenever props change (dimensions, position, rotation, logo, rotationAngle)
   useEffect(() => {
     if (isLoading || paintMeshesRef.current.length === 0) return;
 
@@ -466,8 +485,9 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const rot = draftSponsor.rotation3D || [-1.25, 0, 0];
     const width = draftSponsor.widthCm || 35;
     const height = draftSponsor.heightCm || 20;
+    const angle = rotationAngle || draftSponsor.rotationAngle || 0;
 
-    projectDecal(pos, rot, width, height);
+    projectDecal(pos, rot, width, height, angle);
   }, [
     isLoading,
     draftSponsor.position3D,
@@ -476,6 +496,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     draftSponsor.heightCm,
     draftSponsor.logoUrl,
     draftSponsor.tier,
+    rotationAngle,
+    draftSponsor.rotationAngle,
     projectDecal,
   ]);
 
@@ -503,7 +525,17 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       });
 
       const pos = new THREE.Vector3(...sponsor.position3D);
-      const rot = new THREE.Euler(...sponsor.rotation3D, 'YXZ');
+      const baseEuler = new THREE.Euler(...sponsor.rotation3D, 'YXZ');
+      const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
+
+      if (sponsor.rotationAngle) {
+        const normal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
+        const rotAngleRad = THREE.MathUtils.degToRad(sponsor.rotationAngle);
+        const rotMatrix = new THREE.Matrix4().makeRotationAxis(normal, rotAngleRad);
+        baseMatrix.premultiply(rotMatrix);
+      }
+
+      const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
       const scaleFactor = 0.028;
       const size = new THREE.Vector3(
         (sponsor.widthCm || 35) * scaleFactor,
@@ -516,7 +548,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         if (name.includes('glass') || name.includes('window') || name.includes('windshield')) return;
 
         try {
-          const decalGeo = new DecalGeometry(mesh, pos, rot, size);
+          const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
           const decalMesh = new THREE.Mesh(decalGeo, mat);
           existingGroup.add(decalMesh);
         } catch (err) {
@@ -540,10 +572,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     if (!isPointerDownRef.current || !containerRef.current) return;
 
     if (interactMode === 'moveLogo') {
-      // Smooth continuous 60fps decal dragging across the Porsche body
       placeLogoAtScreenCoord(e.clientX, e.clientY);
     } else {
-      // Smooth 360 orbit camera rotation
       const deltaX = e.clientX - previousMousePositionRef.current.x;
       const deltaY = e.clientY - previousMousePositionRef.current.y;
 
@@ -595,6 +625,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     onUpdateDimensions(newW, newH);
   };
 
+  // Direct angle adjustment helper
+  const handleQuickRotate = (deltaDeg: number) => {
+    if (!onUpdateRotationAngle) return;
+    const newAngle = ((rotationAngle + deltaDeg) % 360 + 360) % 360;
+    onUpdateRotationAngle(newAngle);
+  };
+
   return (
     <div className="relative w-full h-full min-h-[380px] lg:min-h-full bg-neutral-950 flex flex-col overflow-hidden select-none">
       
@@ -634,7 +671,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span>👁️ Mover Vista 3D (Girar Auto)</span>
+            <span>👁️ Girar Auto 3D</span>
           </button>
 
           <button
@@ -647,7 +684,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             }`}
           >
             <Move className="w-4 h-4" />
-            <span>✋ Mover Logo en el Porsche</span>
+            <span>✋ Mover Logo en el Auto</span>
           </button>
         </div>
 
@@ -661,7 +698,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       </div>
 
       {/* Camera View Angle Selector Pills */}
-      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-1.5 max-w-[70%]">
+      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-1.5 max-w-[65%]">
         <button
           type="button"
           onClick={() => setStudioCamera('general')}
@@ -762,9 +799,20 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         </button>
       </div>
 
-      {/* Floating Zoom & Quick Resizer Controls on Bottom-Right */}
+      {/* Floating Scale & Rotation Tools on Bottom-Right */}
       <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5">
         
+        {/* Quick Rotate Button (+45°) */}
+        <button
+          type="button"
+          onClick={() => handleQuickRotate(45)}
+          className="p-2 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-white border border-white/10 transition cursor-pointer shadow-md backdrop-blur-sm flex items-center gap-1 text-[10px] font-mono"
+          title="Rotar Logo +45°"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
+          <span>{rotationAngle}°</span>
+        </button>
+
         {/* Quick Scale + / - */}
         <div className="bg-neutral-900/80 backdrop-blur-sm border border-white/10 rounded-xl flex items-center p-0.5 text-white">
           <button

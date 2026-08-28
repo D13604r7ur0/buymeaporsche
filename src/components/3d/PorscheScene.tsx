@@ -292,11 +292,23 @@ export const PorscheScene: React.FC = () => {
         polygonOffsetUnits: -4,
       });
 
-      const planeGeo = new THREE.PlaneGeometry(1, 0.5);
+      const planeGeo = new THREE.PlaneGeometry(1, 1);
       const decalMesh = new THREE.Mesh(planeGeo, material);
       
+      const baseEuler = new THREE.Euler(...sponsor.rotation3D, 'YXZ');
+      const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
+
+      if (sponsor.rotationAngle) {
+        const normal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
+        const rotAngleRad = THREE.MathUtils.degToRad(sponsor.rotationAngle);
+        const rotMatrix = new THREE.Matrix4().makeRotationAxis(normal, rotAngleRad);
+        baseMatrix.premultiply(rotMatrix);
+      }
+
+      const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
+
       decalMesh.position.set(...sponsor.position3D);
-      decalMesh.rotation.set(...sponsor.rotation3D);
+      decalMesh.rotation.copy(finalEuler);
       decalMesh.scale.set(sponsor.scale3D[0], sponsor.scale3D[1], sponsor.scale3D[2]);
       decalMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
 

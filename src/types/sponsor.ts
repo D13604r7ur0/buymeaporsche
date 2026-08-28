@@ -32,6 +32,7 @@ export interface Sponsor {
   // 3D Positioning on the Porsche 911 (992)
   position3D: [number, number, number];
   rotation3D: [number, number, number];
+  rotationAngle?: number; // 0 to 360 degrees
   scale3D: [number, number, number];
   zoneName: string;
   
