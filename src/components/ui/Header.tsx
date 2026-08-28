@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Porsche 911 (992)
               </span>
               <span className="text-[10px] font-mono text-neutral-500 bg-black/[0.04] px-2 py-0.5 rounded-full">
-                5 Años
+                2 Años
               </span>
             </div>
           </div>

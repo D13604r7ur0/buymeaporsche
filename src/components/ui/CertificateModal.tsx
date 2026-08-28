@@ -17,7 +17,7 @@ export const CertificateModal: React.FC = () => {
     if (navigator.share) {
       navigator.share({
         title: `Certificado de Patrocinio - ${certificateSponsor.brandName}`,
-        text: `¡${certificateSponsor.brandName} es patrocinador oficial del Porsche 911 GT3 RS por 5 años!`,
+        text: `¡${certificateSponsor.brandName} es patrocinador oficial del Porsche 911 (992) por 2 años!`,
         url: window.location.href,
       }).catch(() => {});
     } else {

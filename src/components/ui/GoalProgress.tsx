@@ -28,10 +28,10 @@ export const GoalProgress: React.FC = () => {
               Iniciativa de Financiamiento Colectivo & Publicidad
             </span>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-white tracking-tight">
-              Compra tu espacio en un <span className="text-neutral-300">Porsche 911</span> por 5 años.
+              Compra tu espacio en un <span className="text-neutral-300">Porsche 911</span> por 2 años.
             </h1>
             <p className="text-sm text-neutral-400 leading-relaxed max-w-2xl font-sans">
-              Venta de espacios publicitarios en centímetros cuadrados ($cm^2$). Los patrocinadores formarán parte del showroom 3D y del <strong>wrap de vinil oficial en el auto físico</strong> durante <strong>5 años ({contractDays} días)</strong> en eventos y autódromos de México.
+              Venta de espacios publicitarios en centímetros cuadrados ($cm^2$). Los patrocinadores formarán parte del showroom 3D y del <strong>wrap de vinil oficial en el auto físico</strong> durante <strong>2 años ({contractDays} días)</strong> en eventos y autódromos de México.
             </p>
           </div>
 
@@ -125,7 +125,7 @@ export const GoalProgress: React.FC = () => {
 
           <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.04] space-y-1">
             <div className="text-xs font-semibold text-white">Cobertura Digital</div>
-            <p className="text-[11px] text-neutral-400">Serie documental en YouTube y redes sociales por 5 años.</p>
+            <p className="text-[11px] text-neutral-400">Serie documental en YouTube y redes sociales por 2 años.</p>
           </div>
 
           <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.04] space-y-1">

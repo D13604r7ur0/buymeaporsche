@@ -140,13 +140,13 @@ const MainApp: React.FC = () => {
                 Porsche 911 (992)
               </span>
               <p className="text-[11px] text-neutral-400">
-                Iniciativa de patrocinio publicitario en 3D & pista por 5 años.
+                Iniciativa de patrocinio publicitario en 3D & pista por 2 años.
               </p>
             </div>
           </div>
 
           <div className="text-[11px] text-center sm:text-right text-neutral-400 font-mono">
-            Meta: $3,000,000 MXN · 5 Años de Vigencia
+            Meta: $3,000,000 MXN · 2 Años de Vigencia
           </div>
         </div>
       </footer>

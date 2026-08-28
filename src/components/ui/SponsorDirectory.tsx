@@ -115,7 +115,7 @@ export const SponsorDirectory: React.FC<{ onNavigateTo3D: () => void }> = ({ onN
                 <div>
                   <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500 mb-3">
                     <span>{sponsor.zoneName}</span>
-                    <span className="text-emerald-600 font-semibold">5 Años</span>
+                    <span className="text-emerald-600 font-semibold">2 Años</span>
                   </div>
 
                   <div className="flex items-center gap-3 mb-2">

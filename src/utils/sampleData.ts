@@ -2,8 +2,8 @@ import type { Sponsor, ZoneConfig, TrackEvent, SizeComparison } from '../types/s
 
 
 export const CAMPAIGN_GOAL_MXN = 3000000; // $3,000,000 MXN
-export const CONTRACT_YEARS = 5;
-export const CONTRACT_DAYS = 1825; // 365 * 5
+export const CONTRACT_YEARS = 2;
+export const CONTRACT_DAYS = 730; // 365 * 2
 
 export const ZONES: ZoneConfig[] = [
   {
@@ -176,8 +176,8 @@ export const TRACK_EVENTS_ROADMAP: TrackEvent[] = [
     title: 'Cars & Coffee Luxury Meets & Expos de Superautos',
     location: 'Valle de Bravo, Cancún, Zapopan, San Pedro Garza García',
     trackName: 'Exclusivos Country Clubs & Plazas de Lujo',
-    date: 'Mensual durante 5 años',
-    yearSpan: '60 Eventos en 5 años',
+    date: 'Mensual durante 2 años',
+    yearSpan: '24 Eventos en 2 años',
     estimatedReach: 'Comunidad de alto poder adquisitivo y directores de empresas',
     type: 'Car Meet',
     description: 'Presencia continua en las reuniones de superdeportivos más exclusivas del país con material fotográfico profesional para las marcas.',
@@ -204,8 +204,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     scale3D: [0.85, 0.25, 1],
     zoneName: 'Alerón & Cajuela Trasera (VIP)',
     createdAt: '2026-08-20',
-    contractYears: 5,
-    expiryDate: '2031-08-20',
+    contractYears: 2,
+    expiryDate: '2028-08-20',
     includesPhysicalVinylWrap: true,
     includesTrackDaysExhibition: true,
     includesSocialMediaTags: true,
@@ -233,8 +233,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     scale3D: [0.70, 0.38, 1],
     zoneName: 'Cofre Aerodinámico Central',
     createdAt: '2026-08-22',
-    contractYears: 5,
-    expiryDate: '2031-08-22',
+    contractYears: 2,
+    expiryDate: '2028-08-22',
     includesPhysicalVinylWrap: true,
     includesTrackDaysExhibition: true,
     includesSocialMediaTags: true,
@@ -262,8 +262,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     scale3D: [0.75, 0.38, 1],
     zoneName: 'Puerta Lateral Derecha',
     createdAt: '2026-08-24',
-    contractYears: 5,
-    expiryDate: '2031-08-24',
+    contractYears: 2,
+    expiryDate: '2028-08-24',
     includesPhysicalVinylWrap: true,
     includesTrackDaysExhibition: true,
     includesSocialMediaTags: true,
@@ -291,8 +291,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     scale3D: [0.75, 0.38, 1],
     zoneName: 'Puerta Lateral Izquierda',
     createdAt: '2026-08-25',
-    contractYears: 5,
-    expiryDate: '2031-08-25',
+    contractYears: 2,
+    expiryDate: '2028-08-25',
     includesPhysicalVinylWrap: true,
     includesTrackDaysExhibition: true,
     includesSocialMediaTags: true,
@@ -320,8 +320,8 @@ export const INITIAL_SPONSORS: Sponsor[] = [
     scale3D: [0.50, 0.25, 1],
     zoneName: 'Salpicadera Delantera Derecha',
     createdAt: '2026-08-26',
-    contractYears: 5,
-    expiryDate: '2031-08-26',
+    contractYears: 2,
+    expiryDate: '2028-08-26',
     includesPhysicalVinylWrap: true,
     includesTrackDaysExhibition: true,
     includesSocialMediaTags: true,

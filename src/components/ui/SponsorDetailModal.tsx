@@ -49,7 +49,7 @@ export const SponsorDetailModal: React.FC = () => {
 
             <div>
               <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest block">
-                {selectedSponsor.zoneName} · 5 Años
+                {selectedSponsor.zoneName} · 2 Años
               </span>
               <h2 className="text-xl font-heading font-bold text-neutral-900">
                 {selectedSponsor.brandName}
@@ -89,7 +89,7 @@ export const SponsorDetailModal: React.FC = () => {
 
             <div className="p-3 rounded-2xl bg-[#fafafa] border border-black/[0.04]">
               <span className="text-[10px] text-neutral-400 block">Vigencia:</span>
-              <strong className="text-neutral-900">5 Años</strong>
+              <strong className="text-neutral-900">2 Años</strong>
             </div>
           </div>
 

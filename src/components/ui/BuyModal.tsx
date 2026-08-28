@@ -247,7 +247,7 @@ export const BuyModal: React.FC = () => {
                 {paymentSuccess ? '¡Confirmación Exitosa!' : `Paso ${step} de 3`}
               </span>
               <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-                5 Años de Vigencia Garantizada
+                2 Años de Vigencia Garantizada
               </span>
             </div>
             <h2 className="text-xl font-heading font-bold text-neutral-900">
@@ -306,7 +306,7 @@ export const BuyModal: React.FC = () => {
                 >
                   <div className="flex justify-between items-center text-[10px] font-mono text-neutral-400">
                     <span>{widthCm}x{heightCm} cm ({areaCm2} cm²)</span>
-                    <span className="text-emerald-400">5 AÑOS</span>
+                    <span className="text-emerald-400">2 AÑOS</span>
                   </div>
 
                   <div className="flex items-center gap-3 my-auto">
@@ -599,7 +599,7 @@ export const BuyModal: React.FC = () => {
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-mono text-neutral-400 block">Total Inversión Única (5 Años):</span>
+                  <span className="text-[10px] font-mono text-neutral-400 block">Total Inversión Única (2 Años):</span>
                   <div className="text-2xl font-mono font-bold text-white">
                     ${totalPriceMxn.toLocaleString()} MXN
                   </div>
@@ -824,7 +824,7 @@ export const BuyModal: React.FC = () => {
               {/* Inscription Details */}
               <div className="flex items-center gap-2 text-xs text-neutral-500">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Pago protegido y garantizado por 5 años con folio oficial digital.</span>
+                <span>Pago protegido y garantizado por 2 años con folio oficial digital.</span>
               </div>
 
             </div>
@@ -845,7 +845,7 @@ export const BuyModal: React.FC = () => {
                   {brandName || 'Tu Marca'} ya está en el Porsche 911 (992)
                 </h3>
                 <p className="text-xs text-neutral-500 max-w-md mx-auto font-sans">
-                  Tu sticker ha sido grabado permanentemente en el modelo 3D y vinculado a la carrocería física para los 5 años de la gira oficial.
+                  Tu sticker ha sido grabado permanentemente en el modelo 3D y vinculado a la carrocería física para los 2 años de la gira oficial.
                 </p>
               </div>
 
@@ -867,7 +867,7 @@ export const BuyModal: React.FC = () => {
 
                 <div className="flex justify-between">
                   <span className="text-neutral-500">Vigencia:</span>
-                  <span className="text-neutral-900 font-semibold">5 Años ({CONTRACT_DAYS} Días)</span>
+                  <span className="text-neutral-900 font-semibold">2 Años ({CONTRACT_DAYS} Días)</span>
                 </div>
               </div>
 

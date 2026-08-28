@@ -73,7 +73,7 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
             ¿Qué estás pagando exactamente?
           </h2>
           <p className="text-sm text-neutral-500 mt-2 font-sans">
-            Compara el tamaño físico de tu logo en centímetros cuadrados ($cm^2$) y su costo diario prorrateado durante los <strong>5 años ({CONTRACT_DAYS} días)</strong> de contrato sobre el <strong>Porsche 911 (992)</strong>.
+            Compara el tamaño físico de tu logo en centímetros cuadrados ($cm^2$) y su costo diario prorrateado durante los <strong>2 años ({CONTRACT_DAYS} días)</strong> de contrato sobre el <strong>Porsche 911 (992)</strong>.
           </p>
         </div>
 
@@ -209,7 +209,7 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
 
               <div className="flex justify-between items-center text-neutral-500">
                 <span>Vigencia:</span>
-                <span className="text-emerald-600 font-bold">5 Años (1,825 Días)</span>
+                <span className="text-emerald-600 font-bold">2 Años ({CONTRACT_DAYS} Días)</span>
               </div>
 
               <div className="flex justify-between items-center text-neutral-500">

@@ -569,7 +569,7 @@ export const PorscheScene: React.FC = () => {
                 {activeTooltip.sponsor.zoneName}
               </span>
               <span className="text-[9px] font-mono text-emerald-600 font-semibold">
-                5 Años
+                2 Años
               </span>
             </div>
 

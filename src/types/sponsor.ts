@@ -41,9 +41,9 @@ export interface Sponsor {
   stickerFont?: 'sans' | 'racing' | 'luxury' | 'mono';
   logoScale?: number;
   
-  // Sponsorship contract details (5 years = 1825 days)
+  // Sponsorship contract details (2 years = 730 days)
   createdAt: string;
-  contractYears: number; // 5
+  contractYears: number; // 2
   expiryDate: string;
   
   // Physical exhibition perks

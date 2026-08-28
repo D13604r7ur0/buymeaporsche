@@ -83,7 +83,7 @@ export const createSponsorTexture = (
         ctx.fillStyle = '#94a3b8';
         ctx.font = '600 24px "JetBrains Mono", monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 5 AÑOS PORSCHE 911`, 380, 130);
+        ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 380, 130);
 
         // Brand Name
         ctx.fillStyle = textColor;
@@ -111,7 +111,7 @@ export const createSponsorTexture = (
       ctx.fillStyle = '#94a3b8';
       ctx.font = '600 28px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 5 AÑOS PORSCHE 911`, 64, 96);
+      ctx.fillText(`${sponsor.areaCm2 || 100} cm² · 2 AÑOS PORSCHE 911`, 64, 96);
 
       // Brand Name
       ctx.fillStyle = textColor;

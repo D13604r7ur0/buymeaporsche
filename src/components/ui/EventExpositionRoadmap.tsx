@@ -17,10 +17,10 @@ export const EventExpositionRoadmap: React.FC<{ onNavigateTo3D?: () => void }> =
             Exposición Física & Digital
           </span>
           <h2 className="text-3xl sm:text-4xl font-heading font-bold text-neutral-900 tracking-tight">
-            ¿Dónde se verá tu marca durante 5 años?
+            ¿Dónde se verá tu marca durante 2 años?
           </h2>
           <p className="text-sm text-neutral-500 mt-2 font-sans">
-            La campaña financia un <strong>Porsche 911 (992)</strong> real que portará los logotipos de todos los patrocinadores en vinil de alta resistencia durante 5 años en pistas y eventos de superautos.
+            La campaña financia un <strong>Porsche 911 (992)</strong> real que portará los logotipos de todos los patrocinadores en vinil de alta resistencia durante 2 años en pistas y eventos de superautos.
           </p>
         </div>
 
@@ -30,7 +30,7 @@ export const EventExpositionRoadmap: React.FC<{ onNavigateTo3D?: () => void }> =
             <span className="text-xl">🏁</span>
             <h3 className="font-semibold text-sm text-neutral-900">Vinilado Oficial en Auto Real</h3>
             <p className="text-xs text-neutral-500 leading-relaxed font-sans">
-              Rotulado profesional en las coordenadas 3D exactas que elijas, sellado con laca cerámica para durar 5 años completos.
+              Rotulado profesional en las coordenadas 3D exactas que elijas, sellado con laca cerámica para durar 2 años completos.
             </p>
           </div>
 
