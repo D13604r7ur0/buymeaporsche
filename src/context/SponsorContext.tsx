@@ -215,35 +215,40 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setSponsors((prev) => [newSponsor, ...prev]);
     triggerCelebration();
-    setCertificateSponsor(newSponsor);
-    setIsBuyModalOpen(false);
-    setDraftSponsor(null);
-    setIsPlacementMode(false);
     
-    // Focus camera on new decal
-    focusSponsor(newSponsor.id);
+    // Smoothly focus camera on new decal
+    setFocusedSponsorId(newSponsor.id);
+    if (newSponsor.tier === 'vip_wing') {
+      setCameraPreset('wing');
+    } else if (newSponsor.tier === 'hood_central') {
+      setCameraPreset('hood');
+    } else if (newSponsor.position3D[0] > 0.3) {
+      setCameraPreset('door_right');
+    } else if (newSponsor.position3D[0] < -0.3) {
+      setCameraPreset('door_left');
+    } else {
+      setCameraPreset('overview');
+    }
 
     return newSponsor;
   };
 
   const focusSponsor = (sponsorId: string) => {
     const found = sponsors.find((s) => s.id === sponsorId);
-    if (!found) return;
-
     setFocusedSponsorId(sponsorId);
-    setSelectedSponsor(found);
-
-    // Pick camera preset based on tier or position
-    if (found.tier === 'vip_wing') {
-      setCameraPreset('wing');
-    } else if (found.tier === 'hood_central') {
-      setCameraPreset('hood');
-    } else if (found.position3D[0] > 0.3) {
-      setCameraPreset('door_right');
-    } else if (found.position3D[0] < -0.3) {
-      setCameraPreset('door_left');
-    } else {
-      setCameraPreset('overview');
+    if (found) {
+      setSelectedSponsor(found);
+      if (found.tier === 'vip_wing') {
+        setCameraPreset('wing');
+      } else if (found.tier === 'hood_central') {
+        setCameraPreset('hood');
+      } else if (found.position3D[0] > 0.3) {
+        setCameraPreset('door_right');
+      } else if (found.position3D[0] < -0.3) {
+        setCameraPreset('door_left');
+      } else {
+        setCameraPreset('overview');
+      }
     }
   };
 

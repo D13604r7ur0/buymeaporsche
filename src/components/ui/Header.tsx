@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
-import { Palette, Plus } from 'lucide-react';
+import { sounds } from '../../utils/soundEffects';
+import { Palette, Plus, Volume2, VolumeX } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: '3d' | 'roi' | 'events' | 'directory';
@@ -14,6 +15,8 @@ export const Header: React.FC<HeaderProps> = ({
   const {
     setIsBuyModalOpen,
   } = useSponsors();
+
+  const [isMuted, setIsMuted] = useState<boolean>(sounds.getIsMuted());
 
   const scrollTo = (id: string) => {
     if (id === 'top') {
@@ -83,6 +86,18 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2.5">
           
           <button
+            onClick={() => {
+              const muted = sounds.toggleMute();
+              setIsMuted(muted);
+              if (!muted) sounds.playClickSound();
+            }}
+            className="p-2 rounded-full bg-black/[0.04] hover:bg-black/[0.08] text-neutral-700 hover:text-neutral-900 border border-black/[0.06] transition text-xs font-medium flex items-center justify-center cursor-pointer"
+            title={isMuted ? 'Activar sonido' : 'Silenciar sonido'}
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+          </button>
+
+          <button
             onClick={onOpenConfigurator}
             className="px-3 py-1.5 rounded-full bg-black/[0.04] hover:bg-black/[0.08] text-neutral-700 hover:text-neutral-900 border border-black/[0.06] transition text-xs font-medium flex items-center gap-1.5 cursor-pointer"
             title="Personalizar Color"
@@ -92,7 +107,10 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <button
-            onClick={() => setIsBuyModalOpen(true)}
+            onClick={() => {
+              sounds.playClickSound();
+              setIsBuyModalOpen(true);
+            }}
             className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-3.5 sm:px-4 py-2 rounded-full transition shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />

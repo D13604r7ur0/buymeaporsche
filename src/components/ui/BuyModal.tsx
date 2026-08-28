@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
 import type { SponsorTier, SponsorCategory } from '../../types/sponsor';
 import { ZONES, SIZE_COMPARISONS, CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
+import { sounds } from '../../utils/soundEffects';
 import { 
   X, 
   Upload, 
@@ -14,7 +16,9 @@ import {
   Coins,
   CheckCircle2,
   Sparkles,
-  Eye
+  Eye,
+  Award,
+  Wand2
 } from 'lucide-react';
 
 const CATEGORIES: SponsorCategory[] = [
@@ -54,15 +58,16 @@ export const BuyModal: React.FC = () => {
     addSponsor,
     setCameraPreset,
     focusSponsor,
+    setCertificateSponsor,
   } = useSponsors();
 
   // Wizard state
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Sticker customization state
-  const [selectedTier, setSelectedTier] = useState<SponsorTier>(draftSponsor?.tier || 'premium_door');
-  const [widthCm, setWidthCm] = useState<number>(draftSponsor?.widthCm || 25);
-  const [heightCm, setHeightCm] = useState<number>(draftSponsor?.heightCm || 15);
+  const [selectedTier, setSelectedTier] = useState<SponsorTier>(draftSponsor?.tier || 'hood_central');
+  const [widthCm, setWidthCm] = useState<number>(draftSponsor?.widthCm || 35);
+  const [heightCm, setHeightCm] = useState<number>(draftSponsor?.heightCm || 20);
   const [brandName, setBrandName] = useState<string>(draftSponsor?.brandName || '');
   const [slogan, setSlogan] = useState<string>(draftSponsor?.slogan || '');
   const [targetUrl, setTargetUrl] = useState<string>(draftSponsor?.targetUrl || 'https://');
@@ -81,7 +86,7 @@ export const BuyModal: React.FC = () => {
   const [cardCvc, setCardCvc] = useState<string>('123');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
-  const [createdSponsorId, setCreatedSponsorId] = useState<string | null>(null);
+  const [newlyCreatedSponsor, setNewlyCreatedSponsor] = useState<any>(null);
 
   const currentZone = ZONES.find((z) => z.id === selectedTier) || ZONES[0];
   const areaCm2 = widthCm * heightCm;
@@ -143,13 +148,30 @@ export const BuyModal: React.FC = () => {
   };
 
   const handleApplyPreset = (preset: typeof SIZE_COMPARISONS[0]) => {
+    sounds.playClickSound();
     const sideA = Math.round(Math.sqrt(preset.cm2 * 1.3));
     const sideB = Math.round(preset.cm2 / sideA);
     setWidthCm(sideA);
     setHeightCm(sideB);
   };
 
+  const handleAutoFillDemo = () => {
+    sounds.playClickSound();
+    setBrandName('Apex Motors AI');
+    setSlogan('Tecnología de Inteligencia Artificial para Pista');
+    setTargetUrl('https://apex-motors.ai');
+    setEmail('sponsor@apex-motors.ai');
+    setCategory('Tecnología & AI');
+    setWidthCm(40);
+    setHeightCm(20);
+    setStickerBgColor('#0a0c10');
+    setStickerBorderColor('#ffffff');
+    setLogoPreviewUrl('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80');
+    setCardHolder('DIRECCIÓN APEX MOTORS');
+  };
+
   const handleExecutePayment = () => {
+    sounds.playClickSound();
     setIsProcessing(true);
 
     setTimeout(() => {
@@ -180,11 +202,37 @@ export const BuyModal: React.FC = () => {
         vipTrackPassesCount: selectedTier === 'vip_wing' ? 4 : selectedTier === 'hood_central' ? 3 : 2,
       });
 
-      setCreatedSponsorId(created.id);
+      setNewlyCreatedSponsor(created);
       setIsProcessing(false);
       setPaymentSuccess(true);
       setStep(4);
-    }, 1400);
+
+      // Sound & Confetti celebration
+      sounds.playSuccessChime();
+      setTimeout(() => sounds.playEngineRev(), 300);
+
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#d5001c', '#fed100', '#ffffff', '#0a0c10', '#38bdf8'],
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          angle: 60,
+          spread: 60,
+          origin: { x: 0 },
+        });
+        confetti({
+          particleCount: 80,
+          angle: 120,
+          spread: 60,
+          origin: { x: 1 },
+        });
+      }, 350);
+
+    }, 1200);
   };
 
   return (
@@ -210,15 +258,29 @@ export const BuyModal: React.FC = () => {
             </h2>
           </div>
 
-          <button
-            onClick={() => {
-              setIsBuyModalOpen(false);
-              setDraftSponsor(null);
-            }}
-            className="p-2 rounded-full text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {step === 1 && (
+              <button
+                type="button"
+                onClick={handleAutoFillDemo}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-mono transition cursor-pointer"
+                title="Llenar datos de prueba automáticamente"
+              >
+                <Wand2 className="w-3 h-3 text-neutral-600" />
+                <span className="hidden sm:inline">Demo 1-Clic</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setIsBuyModalOpen(false);
+                setDraftSponsor(null);
+              }}
+              className="p-2 rounded-full text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -395,7 +457,10 @@ export const BuyModal: React.FC = () => {
                       <button
                         key={bg.name}
                         type="button"
-                        onClick={() => setStickerBgColor(bg.hex)}
+                        onClick={() => {
+                          sounds.playClickSound();
+                          setStickerBgColor(bg.hex);
+                        }}
                         className={`px-2.5 py-1 rounded-full text-xs font-mono border transition cursor-pointer ${
                           stickerBgColor === bg.hex
                             ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
@@ -415,7 +480,10 @@ export const BuyModal: React.FC = () => {
                       <button
                         key={border.name}
                         type="button"
-                        onClick={() => setStickerBorderColor(border.hex)}
+                        onClick={() => {
+                          sounds.playClickSound();
+                          setStickerBorderColor(border.hex);
+                        }}
                         className={`px-2.5 py-1 rounded-full text-xs font-mono border transition cursor-pointer ${
                           stickerBorderColor === border.hex
                             ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
@@ -494,6 +562,7 @@ export const BuyModal: React.FC = () => {
                     <div
                       key={zone.id}
                       onClick={() => {
+                        sounds.playClickSound();
                         setSelectedTier(zone.id);
                         if (zone.id === 'vip_wing') setCameraPreset('wing');
                         else if (zone.id === 'hood_central') setCameraPreset('hood');
@@ -548,7 +617,10 @@ export const BuyModal: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('card')}
+                  onClick={() => {
+                    sounds.playClickSound();
+                    setPaymentMethod('card');
+                  }}
                   className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'card'
                       ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
@@ -561,7 +633,10 @@ export const BuyModal: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('spei')}
+                  onClick={() => {
+                    sounds.playClickSound();
+                    setPaymentMethod('spei');
+                  }}
                   className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'spei'
                       ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
@@ -574,7 +649,10 @@ export const BuyModal: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('mercadopago')}
+                  onClick={() => {
+                    sounds.playClickSound();
+                    setPaymentMethod('mercadopago');
+                  }}
                   className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'mercadopago'
                       ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
@@ -587,7 +665,10 @@ export const BuyModal: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('crypto')}
+                  onClick={() => {
+                    sounds.playClickSound();
+                    setPaymentMethod('crypto');
+                  }}
                   className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'crypto'
                       ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
@@ -761,14 +842,14 @@ export const BuyModal: React.FC = () => {
                   ¡Transacción Confirmada con Éxito!
                 </span>
                 <h3 className="text-2xl font-heading font-bold text-neutral-900">
-                  {brandName || 'Tu Marca'} ya forma parte del Porsche 911 (992)
+                  {brandName || 'Tu Marca'} ya está en el Porsche 911 (992)
                 </h3>
                 <p className="text-xs text-neutral-500 max-w-md mx-auto font-sans">
-                  Tu sticker ha sido agregado permanentemente al modelo 3D y se incluirá en el vinilado del auto físico para los próximos 5 años de gira.
+                  Tu sticker ha sido grabado permanentemente en el modelo 3D y vinculado a la carrocería física para los 5 años de la gira oficial.
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white border border-black/[0.06] max-w-sm mx-auto text-xs font-mono space-y-2 text-left">
+              <div className="p-4 rounded-2xl bg-white border border-black/[0.06] max-w-sm mx-auto text-xs font-mono space-y-2 text-left shadow-sm">
                 <div className="flex justify-between">
                   <span className="text-neutral-500">Zona:</span>
                   <span className="text-neutral-900 font-bold">{currentZone.name}</span>
@@ -794,14 +875,31 @@ export const BuyModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    sounds.playClickSound();
                     setIsBuyModalOpen(false);
-                    if (createdSponsorId) focusSponsor(createdSponsorId);
+                    if (newlyCreatedSponsor) {
+                      focusSponsor(newlyCreatedSponsor.id);
+                    }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>Ver mi Sticker en el Porsche 3D</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playClickSound();
+                    if (newlyCreatedSponsor) {
+                      setCertificateSponsor(newlyCreatedSponsor);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-900 border border-black/10 text-xs font-semibold transition cursor-pointer shadow-sm"
+                >
+                  <Award className="w-3.5 h-3.5 text-neutral-800" />
+                  <span>Ver Certificado Oficial</span>
                 </button>
               </div>
 
@@ -815,7 +913,10 @@ export const BuyModal: React.FC = () => {
           {step > 1 && step < 4 ? (
             <button
               type="button"
-              onClick={() => setStep((prev) => (prev - 1) as any)}
+              onClick={() => {
+                sounds.playClickSound();
+                setStep((prev) => (prev - 1) as any);
+              }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-medium transition cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -828,7 +929,10 @@ export const BuyModal: React.FC = () => {
           {step < 3 ? (
             <button
               type="button"
-              onClick={() => setStep((prev) => (prev + 1) as any)}
+              onClick={() => {
+                sounds.playClickSound();
+                setStep((prev) => (prev + 1) as any);
+              }}
               className="flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
             >
               <span>{step === 1 ? 'Elegir Ubicación' : 'Continuar al Pago'}</span>
@@ -851,6 +955,7 @@ export const BuyModal: React.FC = () => {
             <button
               type="button"
               onClick={() => {
+                sounds.playClickSound();
                 setIsBuyModalOpen(false);
                 setDraftSponsor(null);
               }}
