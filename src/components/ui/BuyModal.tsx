@@ -423,6 +423,127 @@ export const BuyModal: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Zone Quick Positioner Buttons */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono text-neutral-600 block font-medium">
+                      Zona en el Porsche (o haz clic en el 3D):
+                    </label>
+                    <span className="text-[10px] font-mono text-sky-600 font-semibold bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                      ${pricePerCm2} MXN/cm²
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClickSound();
+                        setCurrentPosition3D([0, 0.94, 1.15]);
+                        setCurrentRotation3D([-1.22, 0, 0]);
+                        setSelectedTier('hood_central');
+                        setCurrentZoneName('Cofre Central Frontal');
+                        setPricePerCm2(20);
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                        selectedTier === 'hood_central' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      }`}
+                    >
+                      <div className="font-semibold text-[11px]">🔰 Cofre</div>
+                      <div className={`text-[10px] ${selectedTier === 'hood_central' ? 'text-neutral-400' : 'text-neutral-500'}`}>$20 MXN/cm²</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClickSound();
+                        setCurrentPosition3D([0, 0.98, -1.35]);
+                        setCurrentRotation3D([0.15, 0, 0]);
+                        setSelectedTier('vip_wing');
+                        setCurrentZoneName('Alerón Trasero VIP');
+                        setPricePerCm2(25);
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                        selectedTier === 'vip_wing' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      }`}
+                    >
+                      <div className="font-semibold text-[11px]">🏁 Alerón VIP</div>
+                      <div className={`text-[10px] ${selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClickSound();
+                        setCurrentPosition3D([-1.02, 0.58, 0.15]);
+                        setCurrentRotation3D([0, -Math.PI / 2, 0]);
+                        setSelectedTier('premium_door');
+                        setCurrentZoneName('Puerta / Costado Izquierdo');
+                        setPricePerCm2(15);
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                        selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      }`}
+                    >
+                      <div className="font-semibold text-[11px]">🚪 Puerta Izq</div>
+                      <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClickSound();
+                        setCurrentPosition3D([1.02, 0.58, 0.15]);
+                        setCurrentRotation3D([0, Math.PI / 2, 0]);
+                        setSelectedTier('premium_door');
+                        setCurrentZoneName('Puerta / Costado Derecho');
+                        setPricePerCm2(15);
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                        selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      }`}
+                    >
+                      <div className="font-semibold text-[11px]">🚪 Puerta Der</div>
+                      <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClickSound();
+                        setCurrentPosition3D([0, 1.34, -0.1]);
+                        setCurrentRotation3D([-Math.PI / 2, 0, 0]);
+                        setSelectedTier('body_standard');
+                        setCurrentZoneName('Techo Panorámico');
+                        setPricePerCm2(15);
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                        currentZoneName.includes('Techo') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      }`}
+                    >
+                      <div className="font-semibold text-[11px]">🔲 Techo</div>
+                      <div className={`text-[10px] ${currentZoneName.includes('Techo') ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClickSound();
+                        setCurrentPosition3D([0, 0.45, -1.9]);
+                        setCurrentRotation3D([0, Math.PI, 0]);
+                        setSelectedTier('body_standard');
+                        setCurrentZoneName('Defensa / Trasera');
+                        setPricePerCm2(10);
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
+                        currentZoneName.includes('Trasera') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
+                      }`}
+                    >
+                      <div className="font-semibold text-[11px]">🏎️ Trasera</div>
+                      <div className={`text-[10px] ${currentZoneName.includes('Trasera') ? 'text-neutral-400' : 'text-neutral-500'}`}>$10 MXN/cm²</div>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Account Name and Slogan Inputs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
