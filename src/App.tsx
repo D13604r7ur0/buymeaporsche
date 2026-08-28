@@ -3,8 +3,7 @@ import { SponsorProvider } from './context/SponsorContext';
 import { Header } from './components/ui/Header';
 import { PorscheScene } from './components/3d/PorscheScene';
 import { EventExpositionRoadmap } from './components/ui/EventExpositionRoadmap';
-import { SponsorDirectory } from './components/ui/SponsorDirectory';
-import { LeaderboardRanking } from './components/ui/LeaderboardRanking';
+import { SimpleSponsorList } from './components/ui/SimpleSponsorList';
 import { BuyModal } from './components/ui/BuyModal';
 import { SponsorDetailModal } from './components/ui/SponsorDetailModal';
 import { CertificateModal } from './components/ui/CertificateModal';
@@ -63,10 +62,10 @@ const MainApp: React.FC = () => {
 
         {/* Floating Discrete Scroll-to-Content Trigger */}
         <button
-          onClick={() => scrollToSection('ranking')}
+          onClick={() => scrollToSection('sponsors')}
           className="hidden md:flex absolute bottom-8 right-8 z-20 items-center gap-1.5 bg-white/80 hover:bg-white text-neutral-600 hover:text-neutral-900 px-3.5 py-1.5 rounded-full border border-black/10 shadow-sm text-xs font-mono transition cursor-pointer backdrop-blur-md"
         >
-          <span>Ranking cm²</span>
+          <span>Patrocinadores</span>
           <ChevronDown className="w-3.5 h-3.5" />
         </button>
 
@@ -75,24 +74,14 @@ const MainApp: React.FC = () => {
       {/* 2. MAIN CONTENT SECTIONS */}
       <main className="flex-1 w-full bg-[#fafafa]">
         
-        {/* Section: Leaderboard & Ranking by cm2 Size */}
-        <div id="ranking">
-          <LeaderboardRanking onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+        {/* Section: Simple Sponsor List Sorted by Size (cm2) */}
+        <div id="sponsors">
+          <SimpleSponsorList onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         </div>
 
         {/* Section: Event Exposition Roadmap */}
         <div id="events">
           <EventExpositionRoadmap onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
-        </div>
-
-        {/* Section: Leaderboard & Ranking by cm2 Size */}
-        <div id="ranking">
-          <LeaderboardRanking onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
-        </div>
-
-        {/* Section: Sponsors Hall of Fame */}
-        <div id="directory">
-          <SponsorDirectory onNavigateTo3D={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         </div>
 
         {/* Section: Technical Specs */}
