@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
-import type { SponsorTier, SponsorCategory } from '../../types/sponsor';
-import { ZONES, CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
+import type { SponsorTier } from '../../types/sponsor';
+import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
 import { sounds } from '../../utils/soundEffects';
+import { Studio3DCanvas } from '../3d/Studio3DCanvas';
 import { 
   X, 
   Upload, 
@@ -11,42 +12,26 @@ import {
   ArrowLeft, 
   ShieldCheck, 
   CreditCard, 
-  QrCode, 
   Building2, 
   Coins, 
   CheckCircle2, 
-  Sparkles, 
   Eye, 
   Award, 
-  Wand2, 
-  Maximize2, 
   Lock, 
   Unlock,
-  Move
+  QrCode
 } from 'lucide-react';
 
-const CATEGORIES: SponsorCategory[] = [
-  'Tecnología & AI',
-  'Finanzas & Cripto',
-  'Moda & Lujo',
-  'Motorsport & Tuning',
-  'Gastronomía & Bebidas',
-  'Fitness & Deporte',
-  'Startups & Software',
-  'Agencias & Medios',
-  'Otro',
-];
-
 const STICKER_BG_COLORS = [
-  { name: 'Negro Jet', hex: '#0a0c10', text: '#ffffff' },
-  { name: 'Blanco Carrara', hex: '#ffffff', text: '#0a0c10' },
-  { name: 'Rojo Guards', hex: '#d5001c', text: '#ffffff' },
-  { name: 'Amarillo Racing', hex: '#fed100', text: '#0a0c10' },
-  { name: 'Carbono Mate', hex: '#16171a', text: '#ffffff' },
-  { name: 'Vinil Transparente', hex: 'transparent', text: '#ffffff' },
+  { name: 'Negro Profundo', hex: '#0a0c10' },
+  { name: 'Blanco Puro', hex: '#ffffff' },
+  { name: 'Rojo Carmín', hex: '#d5001c' },
+  { name: 'Amarillo Racing', hex: '#fcd34d' },
+  { name: 'Azul Noche', hex: '#1e3a8a' },
+  { name: 'Transparente', hex: 'transparent' },
 ];
 
-const STICKER_BORDERS = [
+const STICKER_BORDER_COLORS = [
   { name: 'Blanco', hex: '#ffffff' },
   { name: 'Oro Porsche', hex: '#d4af37' },
   { name: 'Rojo', hex: '#d5001c' },
@@ -60,49 +45,52 @@ export const BuyModal: React.FC = () => {
     draftSponsor,
     setDraftSponsor,
     addSponsor,
-    setCameraPreset,
     focusSponsor,
     setCertificateSponsor,
+    sponsors,
   } = useSponsors();
 
-  // Wizard state: 1 = Subir & Redimensionar Logo, 2 = Pasarela de Pago, 3 = Confirmación Exitosa
+  // Wizard step: 1 = Live 3D Placement & Logo Design, 2 = Payment Gateway, 3 = Success
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Logo & Sticker customization state
+  // Logo & dimensions state
   const [selectedTier, setSelectedTier] = useState<SponsorTier>(draftSponsor?.tier || 'hood_central');
   const [widthCm, setWidthCm] = useState<number>(draftSponsor?.widthCm || 35);
   const [heightCm, setHeightCm] = useState<number>(draftSponsor?.heightCm || 20);
   const [lockAspectRatio, setLockAspectRatio] = useState<boolean>(true);
   const [aspectRatio, setAspectRatio] = useState<number>(35 / 20);
   
-  const [brandName, setBrandName] = useState<string>(draftSponsor?.brandName || '');
-  const [sponsorName, setSponsorName] = useState<string>(draftSponsor?.sponsorName || '');
+  const [accountName, setAccountName] = useState<string>(draftSponsor?.sponsorName || draftSponsor?.brandName || '');
   const [slogan, setSlogan] = useState<string>(draftSponsor?.slogan || '');
-  const [targetUrl, setTargetUrl] = useState<string>(draftSponsor?.targetUrl || 'https://');
-  const [email, setEmail] = useState<string>(draftSponsor?.email || '');
-  const [category, setCategory] = useState<SponsorCategory>('Tecnología & AI');
+  const targetUrl = draftSponsor?.targetUrl || 'https://buymeaporsche.com';
+  const email = draftSponsor?.email || 'contacto@sponsor.com';
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(draftSponsor?.logoUrl || '');
   const [stickerBgColor, setStickerBgColor] = useState<string>('#0a0c10');
   const [stickerBorderColor, setStickerBorderColor] = useState<string>('#ffffff');
-  const [logoScale, setLogoScale] = useState<number>(1);
+  const logoScale = 1;
 
-  // Drag Resizing State on Visual Canvas
-  const [isResizing, setIsResizing] = useState<boolean>(false);
-  const resizeStartPosRef = useRef<{ x: number; y: number; startW: number; startH: number }>({ x: 0, y: 0, startW: 35, startH: 20 });
+  // 3D positioning state
+  const [currentPosition3D, setCurrentPosition3D] = useState<[number, number, number]>(
+    draftSponsor?.position3D || [0, 0.94, 1.15]
+  );
+  const [currentRotation3D, setCurrentRotation3D] = useState<[number, number, number]>(
+    draftSponsor?.rotation3D || [-1.22, 0, 0]
+  );
+  const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');
+  const [pricePerCm2, setPricePerCm2] = useState<number>(20);
 
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'spei' | 'mercadopago' | 'crypto'>('card');
   const [cardNumber, setCardNumber] = useState<string>('4242 •••• •••• 4242');
-  const [cardHolder, setCardHolder] = useState<string>('');
   const [cardExpiry, setCardExpiry] = useState<string>('12/28');
   const [cardCvc, setCardCvc] = useState<string>('123');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
   const [newlyCreatedSponsor, setNewlyCreatedSponsor] = useState<any>(null);
 
-  const currentZone = ZONES.find((z) => z.id === selectedTier) || ZONES[0];
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const areaCm2 = widthCm * heightCm;
-  const totalPriceMxn = areaCm2 * currentZone.pricePerCm2;
+  const totalPriceMxn = areaCm2 * pricePerCm2;
   const dailyCostMxn = totalPriceMxn / CONTRACT_DAYS;
 
   // Sync Draft with 3D in Real-Time continuously
@@ -110,8 +98,8 @@ export const BuyModal: React.FC = () => {
     if (!isBuyModalOpen) return;
 
     setDraftSponsor({
-      brandName: brandName || 'TU MARCA',
-      sponsorName: sponsorName || '',
+      brandName: accountName || 'TU CUENTA',
+      sponsorName: accountName || '',
       slogan: slogan || 'Patrocinador Oficial Porsche 911',
       targetUrl: targetUrl || 'buymeaporsche.com',
       logoUrl: logoPreviewUrl,
@@ -119,24 +107,23 @@ export const BuyModal: React.FC = () => {
       widthCm,
       heightCm,
       areaCm2,
-      pricePerCm2: currentZone.pricePerCm2,
+      pricePerCm2,
       totalPriceMxn,
-      zoneName: currentZone.name,
-      position3D: draftSponsor?.position3D || currentZone.defaultPosition,
-      rotation3D: draftSponsor?.rotation3D || currentZone.defaultRotation,
+      zoneName: currentZoneName,
+      position3D: currentPosition3D,
+      rotation3D: currentRotation3D,
       scale3D: [widthCm / 25, heightCm / 25, 1],
       stickerBgColor,
       stickerBorderColor,
       logoScale,
       email,
-      category,
     });
   }, [
+    isBuyModalOpen,
     widthCm,
     heightCm,
     selectedTier,
-    brandName,
-    sponsorName,
+    accountName,
     slogan,
     targetUrl,
     logoPreviewUrl,
@@ -144,93 +131,55 @@ export const BuyModal: React.FC = () => {
     stickerBorderColor,
     logoScale,
     email,
-    category,
-    isBuyModalOpen,
+    currentPosition3D,
+    currentRotation3D,
+    currentZoneName,
+    pricePerCm2,
+    areaCm2,
+    totalPriceMxn,
+    setDraftSponsor,
   ]);
 
   if (!isBuyModalOpen) return null;
 
-  // File upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Logo Upload
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      sounds.playClickSound();
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setLogoPreviewUrl(result);
-        
-        // Auto calculate aspect ratio of image
+      reader.onload = (event) => {
+        const url = event.target?.result as string;
+        setLogoPreviewUrl(url);
+
         const img = new Image();
         img.onload = () => {
-          const ratio = (img.naturalWidth || 1) / (img.naturalHeight || 1);
+          const ratio = img.width / img.height;
           setAspectRatio(ratio);
-          if (ratio > 1.2) {
-            setWidthCm(36);
-            setHeightCm(Math.max(8, Math.round(36 / ratio)));
-          } else {
-            setHeightCm(24);
-            setWidthCm(Math.max(8, Math.round(24 * ratio)));
+          if (lockAspectRatio) {
+            const newH = Math.max(5, Math.min(60, Math.round(widthCm / ratio)));
+            setHeightCm(newH);
           }
         };
-        img.src = result;
+        img.src = url;
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Drag handles resize interaction
-  const handleResizePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizing(true);
-    resizeStartPosRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      startW: widthCm,
-      startH: heightCm,
-    };
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const deltaX = moveEvent.clientX - resizeStartPosRef.current.x;
-      const deltaY = moveEvent.clientY - resizeStartPosRef.current.y;
-
-      const scaleFactor = 0.22;
-      let newW = Math.max(8, Math.min(120, Math.round(resizeStartPosRef.current.startW + deltaX * scaleFactor)));
-      let newH = Math.max(5, Math.min(60, Math.round(resizeStartPosRef.current.startH + deltaY * scaleFactor)));
-
-      if (lockAspectRatio && aspectRatio > 0) {
-        newH = Math.max(5, Math.min(60, Math.round(newW / aspectRatio)));
-      }
-
-      setWidthCm(newW);
-      setHeightCm(newH);
-    };
-
-    const handlePointerUp = () => {
-      setIsResizing(false);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-  };
-
-  const handleAutoFillDemo = () => {
+  const handleUpdateFrom3D = (update: {
+    position3D: [number, number, number];
+    rotation3D: [number, number, number];
+    tier: SponsorTier;
+    zoneName: string;
+    pricePerCm2: number;
+  }) => {
     sounds.playClickSound();
-    setBrandName('Apex Motors AI');
-    setSponsorName('Diego Arturo');
-    setSlogan('Tecnología de Inteligencia Artificial para Pista');
-    setTargetUrl('https://apex-motors.ai');
-    setEmail('sponsor@apex-motors.ai');
-    setCategory('Tecnología & AI');
-    setWidthCm(40);
-    setHeightCm(20);
-    setAspectRatio(2);
-    setStickerBgColor('#0a0c10');
-    setStickerBorderColor('#ffffff');
-    setLogoPreviewUrl('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80');
-    setCardHolder('DIEGO ARTURO');
+    setCurrentPosition3D(update.position3D);
+    setCurrentRotation3D(update.rotation3D);
+    setSelectedTier(update.tier);
+    setCurrentZoneName(update.zoneName);
+    setPricePerCm2(update.pricePerCm2);
   };
 
   const handleExecutePayment = () => {
@@ -238,24 +187,25 @@ export const BuyModal: React.FC = () => {
     setIsProcessing(true);
 
     setTimeout(() => {
+      const name = accountName.trim() || 'Patrocinador Porsche 911';
       const created = addSponsor({
-        brandName: brandName.trim() || 'Marca Patrocinadora',
-        sponsorName: sponsorName.trim() || brandName.trim(),
-        slogan: slogan.trim() || 'Patrocinador oficial Porsche 911 (992)',
+        brandName: name,
+        sponsorName: name,
+        slogan: slogan.trim() || 'Patrocinador Oficial Porsche 911 (992)',
         logoUrl: logoPreviewUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
         targetUrl: targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`,
         email: email || 'contacto@sponsor.com',
-        category,
+        category: 'Tecnología & AI',
         tier: selectedTier,
         widthCm,
         heightCm,
         areaCm2,
-        pricePerCm2: currentZone.pricePerCm2,
+        pricePerCm2,
         totalPriceMxn,
-        position3D: draftSponsor?.position3D || currentZone.defaultPosition,
-        rotation3D: draftSponsor?.rotation3D || currentZone.defaultRotation,
+        position3D: currentPosition3D,
+        rotation3D: currentRotation3D,
         scale3D: [widthCm / 25, heightCm / 25, 1],
-        zoneName: currentZone.name,
+        zoneName: currentZoneName,
         stickerBgColor,
         stickerBorderColor,
         logoScale,
@@ -268,813 +218,575 @@ export const BuyModal: React.FC = () => {
 
       setNewlyCreatedSponsor(created);
       setIsProcessing(false);
-      setPaymentSuccess(true);
       setStep(3);
 
-      // Sound & Confetti celebration
       sounds.playSuccessChime();
       setTimeout(() => sounds.playEngineRev(), 300);
 
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#d5001c', '#fed100', '#ffffff', '#0a0c10', '#38bdf8'],
-      });
-      setTimeout(() => {
+      try {
         confetti({
-          particleCount: 80,
-          angle: 60,
-          spread: 60,
-          origin: { x: 0 },
+          particleCount: 90,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#d5001c', '#ffffff', '#d4af37', '#00ff88'],
         });
-        confetti({
-          particleCount: 80,
-          angle: 120,
-          spread: 60,
-          origin: { x: 1 },
-        });
-      }, 350);
-
+      } catch (err) {
+        console.error(err);
+      }
     }, 1200);
   };
 
+  const handleClose = () => {
+    sounds.playClickSound();
+    setIsBuyModalOpen(false);
+    setStep(1);
+    setDraftSponsor(null);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/50 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl bg-white rounded-3xl border border-black/10 shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col text-neutral-900">
-        
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-black/[0.06] flex items-center justify-between bg-white">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 font-semibold">
-                {paymentSuccess ? '¡Confirmación Exitosa!' : `Paso ${step} de 2`}
-              </span>
-              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-                2 Años de Vigencia Garantizada
-              </span>
-            </div>
-            <h2 className="text-xl font-heading font-bold text-neutral-900">
-              {step === 1 && '1. Sube tu Logo, Redimensiónalo y Calcula el Costo'}
-              {step === 2 && '2. Pasarela de Pago & Emisión de Certificado'}
-              {step === 3 && '¡Tu Logo ya está en el Porsche 911!'}
-            </h2>
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+      
+      {/* Top Studio Bar */}
+      <header className="h-14 border-b border-white/10 bg-neutral-950 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white text-xs">
+            🏎️
           </div>
-
-          <div className="flex items-center gap-2">
-            {step === 1 && (
-              <button
-                type="button"
-                onClick={handleAutoFillDemo}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-mono transition cursor-pointer"
-                title="Llenar datos de prueba automáticamente"
-              >
-                <Wand2 className="w-3 h-3 text-neutral-600" />
-                <span className="hidden sm:inline">Demo 1-Clic</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setIsBuyModalOpen(false);
-                setDraftSponsor(null);
-              }}
-              className="p-2 rounded-full text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div>
+            <h1 className="text-white text-xs sm:text-sm font-heading font-bold tracking-wide">
+              Estudio 3D de Colocación en Vivo · Porsche 911
+            </h1>
+            <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">
+              Arrastra tu sticker o haz clic sobre la carrocería para ubicar tu logo en tiempo real
+            </span>
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 bg-white">
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 text-xs font-mono text-neutral-400 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+            <span>Zona: <strong className="text-sky-400">{currentZoneName}</strong></span>
+            <span>·</span>
+            <span>Tarifa: <strong className="text-emerald-400">${pricePerCm2} MXN/cm²</strong></span>
+          </div>
+
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+            title="Cerrar Estudio"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* Main Split-Screen Workspace */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        
+        {/* LEFT PANEL: Live Interactive 3D Porsche Viewport (60% Desktop) */}
+        <div className="w-full lg:w-[58%] h-[42vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/10 relative bg-neutral-950">
+          <Studio3DCanvas
+            draftSponsor={{
+              id: 'draft',
+              brandName: accountName || 'TU CUENTA',
+              sponsorName: accountName || '',
+              slogan,
+              logoUrl: logoPreviewUrl,
+              position3D: currentPosition3D,
+              rotation3D: currentRotation3D,
+              scale3D: [widthCm / 25, heightCm / 25, 1],
+              zoneName: currentZoneName,
+              tier: selectedTier,
+              pricePerCm2,
+              stickerBgColor,
+              stickerBorderColor,
+              logoScale,
+            }}
+            onUpdateDraftPosition={handleUpdateFrom3D}
+            existingSponsors={sponsors}
+          />
+        </div>
+
+        {/* RIGHT PANEL: Live Controls & Pricing Studio (42% Desktop) */}
+        <div className="w-full lg:w-[42%] h-[58vh] lg:h-full bg-white text-neutral-900 flex flex-col overflow-y-auto">
           
-          {/* STEP 1: UPLOAD, INTERACTIVE RESIZE & LIVE PRICING */}
+          {/* STEP 1: Logo, Dimensions & Auto-Pricing */}
           {step === 1 && (
-            <div className="space-y-6">
-              
-              {/* Top: Upload Box & Quick Actions */}
-              <div className="p-4 rounded-2xl bg-[#fafafa] border border-dashed border-black/15 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="w-12 h-12 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 shadow-sm overflow-hidden p-1">
+            <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between">
+              <div className="space-y-6">
+                
+                {/* Header Instructions */}
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mb-1">
+                    Paso 1 de 2 · Personalización & Medidas
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-heading font-bold text-neutral-900">
+                    Sube tu Logo & Ajusta el Tamaño
+                  </h2>
+                  <p className="text-xs text-neutral-500 font-sans mt-0.5">
+                    Mueve o haz clic sobre el Porsche 3D (a la izquierda) para posicionar tu logo exactamente donde quieras.
+                  </p>
+                </div>
+
+                {/* Logo Uploader Dropzone */}
+                <div className="space-y-2">
+                  <label className="text-xs font-mono text-neutral-600 block font-medium">Logotipo o Imagen:</label>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-neutral-300 hover:border-neutral-900 rounded-2xl p-4 transition text-center cursor-pointer bg-[#fafafa] flex items-center justify-center gap-4"
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+
                     {logoPreviewUrl ? (
-                      <img src={logoPreviewUrl} alt="Logo" className="w-full h-full object-contain" />
+                      <div className="flex items-center gap-4 text-left w-full">
+                        <div className="w-14 h-14 rounded-xl bg-white border border-black/10 p-1.5 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                          <img src={logoPreviewUrl} alt="Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs font-bold text-neutral-900 block truncate">Logo Cargado</span>
+                          <span className="text-[11px] text-neutral-500 font-sans">Haz clic para cambiar imagen</span>
+                        </div>
+                      </div>
                     ) : (
-                      <Upload className="w-5 h-5 text-neutral-400" />
+                      <div className="py-2 flex flex-col items-center justify-center text-neutral-600">
+                        <Upload className="w-6 h-6 text-neutral-400 mb-1.5" />
+                        <span className="text-xs font-medium text-neutral-900">Subir logotipo o diseño (PNG, JPG, SVG)</span>
+                        <span className="text-[10px] text-neutral-400 font-sans mt-0.5">Fondo transparente recomendado</span>
+                      </div>
                     )}
                   </div>
-                  <div>
-                    <span className="text-xs font-semibold text-neutral-900 block">
-                      {logoPreviewUrl ? 'Logotipo Cargado' : 'Sube tu Logotipo o Imagen'}
-                    </span>
-                    <span className="text-[11px] text-neutral-500 font-mono">
-                      {logoPreviewUrl ? 'Listo para redimensionar en el lienzo' : 'PNG transparente, JPG o SVG'}
-                    </span>
-                  </div>
                 </div>
 
-                <label className="w-full sm:w-auto text-center px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold rounded-xl transition cursor-pointer shadow-sm shrink-0">
-                  <span>{logoPreviewUrl ? 'Cambiar Imagen' : 'Seleccionar Archivo'}</span>
-                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                </label>
-              </div>
-
-              {logoPreviewUrl && (
-                <div className="flex items-center justify-between gap-3 text-xs font-mono p-3 bg-[#fafafa] rounded-xl border border-black/[0.06]">
-                  <span className="text-neutral-500">Escala de Imagen en Sticker:</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={0.5}
-                      max={1.5}
-                      step={0.05}
-                      value={logoScale}
-                      onChange={(e) => setLogoScale(Number(e.target.value))}
-                      className="accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
-                    />
-                    <span className="text-neutral-900 font-bold w-10 text-right">{logoScale}x</span>
-                  </div>
-                </div>
-              )}
-
-              {/* INTERACTIVE VISUAL RESIZER CANVAS */}
-              <div className="p-6 rounded-3xl bg-[#f4f5f7] border border-black/[0.08] relative overflow-hidden flex flex-col items-center justify-center select-none min-h-[260px]">
-                
-                {/* Rulers Background Grid */}
-                <div 
-                  className="absolute inset-0 opacity-[0.08] pointer-events-none"
-                  style={{
-                    backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-                    backgroundSize: '20px 20px',
-                  }}
-                />
-
-                <div className="absolute top-3 left-4 flex items-center gap-2 text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
-                  <Move className="w-3 h-3 text-neutral-400" />
-                  <span>Arrastra la esquina para redimensionar en vivo</span>
-                </div>
-
-                {/* Aspect Ratio Lock Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setLockAspectRatio(!lockAspectRatio)}
-                  className="absolute top-3 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 border border-black/10 text-[11px] font-mono text-neutral-700 shadow-sm hover:bg-white cursor-pointer"
-                >
-                  {lockAspectRatio ? <Lock className="w-3 h-3 text-emerald-600" /> : <Unlock className="w-3 h-3 text-neutral-400" />}
-                  <span>{lockAspectRatio ? 'Proporción Bloqueada' : 'Libre'}</span>
-                </button>
-
-                {/* THE RESIZABLE STICKER BOX */}
-                <div
-                  className={`relative transition-shadow duration-150 rounded-2xl p-4 flex flex-col justify-between shadow-lg border-2 ${
-                    isResizing ? 'ring-4 ring-black/15 shadow-2xl scale-[1.01]' : ''
-                  }`}
-                  style={{
-                    width: `${Math.max(160, Math.min(380, widthCm * 3.4))}px`,
-                    height: `${Math.max(100, Math.min(240, heightCm * 3.4))}px`,
-                    backgroundColor: stickerBgColor === 'transparent' ? 'rgba(10,12,16,0.88)' : stickerBgColor,
-                    borderColor: stickerBorderColor === 'transparent' ? 'rgba(255,255,255,0.2)' : stickerBorderColor,
-                  }}
-                >
-                  {/* Top Label */}
-                  <div className="flex justify-between items-center text-[10px] font-mono text-neutral-300">
-                    <span className="bg-black/40 px-1.5 py-0.5 rounded font-bold">
-                      {widthCm} × {heightCm} cm
-                    </span>
-                    <span className="text-emerald-400 font-bold bg-black/40 px-1.5 py-0.5 rounded">
-                      {areaCm2} cm²
-                    </span>
-                  </div>
-
-                  {/* Logo Center Display */}
-                  <div className="flex items-center gap-3 my-auto overflow-hidden">
-                    {logoPreviewUrl ? (
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-white/10 p-1 flex items-center justify-center shrink-0 overflow-hidden border border-white/20">
-                        <img
-                          src={logoPreviewUrl}
-                          alt="Logo"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    ) : null}
-
-                    <div className={logoPreviewUrl ? 'text-left overflow-hidden' : 'text-center w-full'}>
-                      <div className="font-heading font-bold text-base sm:text-lg text-white tracking-wide uppercase truncate">
-                        {brandName || 'TU MARCA AQUÍ'}
-                      </div>
-                      <div className="text-[11px] text-neutral-300 font-sans truncate">
-                        {slogan || 'Patrocinador Oficial Porsche 911'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom URL */}
-                  <div className="text-[9px] font-mono text-cyan-400 text-left truncate">
-                    ↗ {(targetUrl || 'tumarca.com').replace(/^https?:\/\//, '')}
-                  </div>
-
-                  {/* DRAG CORNER RESIZE HANDLE */}
-                  <div
-                    onPointerDown={handleResizePointerDown}
-                    className="absolute -bottom-2.5 -right-2.5 w-6 h-6 rounded-full bg-neutral-900 text-white border-2 border-white shadow-xl flex items-center justify-center cursor-nwse-resize hover:scale-125 transition-transform"
-                    title="Arrastra para redimensionar el logo"
-                  >
-                    <Maximize2 className="w-3 h-3 rotate-90" />
-                  </div>
-                </div>
-
-                <div className="mt-4 text-[11px] text-neutral-500 font-mono flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-neutral-800" />
-                  <span>El tamaño en el Porsche 3D cambia en tiempo real mientras redimensionas.</span>
-                </div>
-              </div>
-
-              {/* Real-Time Size Sliders (Alternative to Dragging) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3.5 rounded-2xl bg-[#fafafa] border border-black/[0.06] space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-500">Ancho ({widthCm} cm):</span>
-                    <strong className="text-neutral-900">{widthCm} cm</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min={8}
-                    max={120}
-                    value={widthCm}
-                    onChange={(e) => {
-                      const w = Number(e.target.value);
-                      setWidthCm(w);
-                      if (lockAspectRatio && aspectRatio > 0) {
-                        setHeightCm(Math.max(5, Math.min(60, Math.round(w / aspectRatio))));
-                      }
-                    }}
-                    className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
-                  />
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#fafafa] border border-black/[0.06] space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-neutral-500">Alto ({heightCm} cm):</span>
-                    <strong className="text-neutral-900">{heightCm} cm</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min={5}
-                    max={60}
-                    value={heightCm}
-                    onChange={(e) => {
-                      const h = Number(e.target.value);
-                      setHeightCm(h);
-                      if (lockAspectRatio && aspectRatio > 0) {
-                        setWidthCm(Math.max(8, Math.min(120, Math.round(h * aspectRatio))));
-                      }
-                    }}
-                    className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              {/* Name and Slogan */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Tu Nombre o Cuenta *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. Diego Arturo"
-                    value={sponsorName || brandName}
-                    onChange={(e) => {
-                      setSponsorName(e.target.value);
-                      setBrandName(e.target.value);
-                    }}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Slogan o Mensaje *</label>
-                  <input
-                    type="text"
-                    placeholder="Ej. Patrocinador Oficial Porsche 911"
-                    value={slogan}
-                    onChange={(e) => setSlogan(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-              </div>
-
-              {/* Zone Placement on Car */}
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-neutral-500 block">Zona de la carrocería en el 911:</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {ZONES.filter((z) => z.id !== 'showroom_floor').map((zone) => (
-                    <div
-                      key={zone.id}
-                      onClick={() => {
-                        sounds.playClickSound();
-                        setSelectedTier(zone.id);
-                        if (zone.id === 'vip_wing') setCameraPreset('wing');
-                        else if (zone.id === 'hood_central') setCameraPreset('hood');
-                        else if (zone.id === 'premium_door') setCameraPreset('door_right');
-                        else setCameraPreset('overview');
-                      }}
-                      className={`p-3.5 rounded-2xl border transition cursor-pointer ${
-                        selectedTier === zone.id
-                          ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                          : 'bg-[#fafafa] border-black/[0.06] text-neutral-800 hover:border-black/20'
+                {/* Dimension Sliders (Width & Height) */}
+                <div className="bg-[#fafafa] p-4 rounded-2xl border border-black/[0.06] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-neutral-700 font-medium">Dimensiones en Centímetros:</span>
+                    <button
+                      type="button"
+                      onClick={() => setLockAspectRatio(!lockAspectRatio)}
+                      className={`text-[10px] font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition cursor-pointer ${
+                        lockAspectRatio ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-600 border-black/10'
                       }`}
                     >
-                      <div className="flex justify-between items-center text-xs font-semibold">
-                        <span>{zone.shortName}</span>
-                        <span className={`font-mono text-[11px] ${selectedTier === zone.id ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                          ${zone.pricePerCm2} MXN/cm²
-                        </span>
-                      </div>
-                      <p className={`text-[11px] mt-0.5 ${selectedTier === zone.id ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                        {zone.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Links and Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Sitio Web Oficial:</label>
-                  <input
-                    type="url"
-                    placeholder="https://tumarca.com"
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Email de Contacto:</label>
-                  <input
-                    type="email"
-                    placeholder="contacto@tumarca.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1">Categoría:</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as SponsorCategory)}
-                    className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900 cursor-pointer"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Color Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1.5">Fondo del Sticker:</label>
-                  <div className="flex flex-wrap gap-2">
-                    {STICKER_BG_COLORS.map((bg) => (
-                      <button
-                        key={bg.name}
-                        type="button"
-                        onClick={() => {
-                          sounds.playClickSound();
-                          setStickerBgColor(bg.hex);
-                        }}
-                        className={`px-2.5 py-1 rounded-full text-xs font-mono border transition cursor-pointer ${
-                          stickerBgColor === bg.hex
-                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                            : 'bg-white text-neutral-700 border-black/10 hover:border-black/30'
-                        }`}
-                      >
-                        {bg.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-mono text-neutral-500 block mb-1.5">Borde del Sticker:</label>
-                  <div className="flex flex-wrap gap-2">
-                    {STICKER_BORDERS.map((border) => (
-                      <button
-                        key={border.name}
-                        type="button"
-                        onClick={() => {
-                          sounds.playClickSound();
-                          setStickerBorderColor(border.hex);
-                        }}
-                        className={`px-2.5 py-1 rounded-full text-xs font-mono border transition cursor-pointer ${
-                          stickerBorderColor === border.hex
-                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                            : 'bg-white text-neutral-700 border-black/10 hover:border-black/30'
-                        }`}
-                      >
-                        {border.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* LIVE DYNAMIC PRICE COUNTER */}
-              <div className="p-5 rounded-2xl bg-neutral-900 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg border border-white/10">
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-mono text-neutral-400 block uppercase">
-                    Cálculo Automático de Superficie:
-                  </span>
-                  <div className="text-xs font-mono text-neutral-300">
-                    {widthCm} × {heightCm} cm = <strong className="text-white">{areaCm2} cm²</strong> (${currentZone.pricePerCm2} MXN/cm²)
-                  </div>
-                  <div className="text-[11px] font-mono text-emerald-400">
-                    ${dailyCostMxn.toFixed(2)} MXN / día (por 2 años de gira)
-                  </div>
-                </div>
-
-                <div className="sm:text-right w-full sm:w-auto border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
-                  <span className="text-[10px] font-mono text-neutral-400 block uppercase">Total a Cobrar:</span>
-                  <div className="text-2xl font-mono font-bold text-white">
-                    ${totalPriceMxn.toLocaleString()} <span className="text-xs font-normal text-neutral-400">MXN</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* STEP 2: FUNCTIONAL PAYMENT GATEWAY */}
-          {step === 2 && (
-            <div className="space-y-6">
-              
-              {/* Order Summary Pill */}
-              <div className="p-4 rounded-2xl bg-[#fafafa] border border-black/[0.06] flex justify-between items-center text-xs font-mono">
-                <div>
-                  <span className="text-neutral-500 block text-[10px]">DISEÑO A COBRAR:</span>
-                  <strong className="text-neutral-900">{brandName || 'Tu Marca'} · {currentZone.name}</strong>
-                  <div className="text-neutral-500 text-[11px]">{widthCm}×{heightCm} cm ({areaCm2} cm²)</div>
-                </div>
-                <div className="text-right">
-                  <span className="text-neutral-500 block text-[10px]">TOTAL:</span>
-                  <span className="text-xl font-bold text-neutral-900">${totalPriceMxn.toLocaleString()} MXN</span>
-                </div>
-              </div>
-
-              {/* Payment Methods Tabs */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClickSound();
-                    setPaymentMethod('card');
-                  }}
-                  className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                    paymentMethod === 'card'
-                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                      : 'bg-[#fafafa] border-black/[0.06] text-neutral-700 hover:border-black/20'
-                  }`}
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Tarjeta</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClickSound();
-                    setPaymentMethod('spei');
-                  }}
-                  className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                    paymentMethod === 'spei'
-                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                      : 'bg-[#fafafa] border-black/[0.06] text-neutral-700 hover:border-black/20'
-                  }`}
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>SPEI / Banco</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClickSound();
-                    setPaymentMethod('mercadopago');
-                  }}
-                  className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                    paymentMethod === 'mercadopago'
-                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                      : 'bg-[#fafafa] border-black/[0.06] text-neutral-700 hover:border-black/20'
-                  }`}
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>Mercado Pago</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClickSound();
-                    setPaymentMethod('crypto');
-                  }}
-                  className={`p-3 rounded-2xl border text-xs font-medium flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                    paymentMethod === 'crypto'
-                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                      : 'bg-[#fafafa] border-black/[0.06] text-neutral-700 hover:border-black/20'
-                  }`}
-                >
-                  <Coins className="w-4 h-4" />
-                  <span>USDT / Cripto</span>
-                </button>
-              </div>
-
-              {/* METHOD 1: CARD FORM */}
-              {paymentMethod === 'card' && (
-                <div className="space-y-4">
-                  <div className="w-full max-w-sm mx-auto p-5 rounded-2xl bg-neutral-900 text-white shadow-lg space-y-4 font-mono text-xs border border-white/10">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-heading font-bold tracking-widest text-neutral-300">PORSCHE PAY</span>
-                      <span className="text-xs text-neutral-400">VISA / MASTERCARD</span>
-                    </div>
-
-                    <div className="text-base tracking-widest text-white py-1">
-                      {cardNumber || '•••• •••• •••• ••••'}
-                    </div>
-
-                    <div className="flex justify-between items-end text-[10px] text-neutral-400">
-                      <div>
-                        <div className="uppercase">Titular</div>
-                        <div className="text-white text-xs">{cardHolder || brandName || 'NOMBRE TITULAR'}</div>
-                      </div>
-
-                      <div>
-                        <div className="uppercase">Expira</div>
-                        <div className="text-white text-xs">{cardExpiry}</div>
-                      </div>
-                    </div>
+                      {lockAspectRatio ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                      <span>{lockAspectRatio ? 'Proporción Fija' : 'Libre'}</span>
+                    </button>
                   </div>
 
-                  <div className="space-y-3 pt-2">
-                    <div>
-                      <label className="text-xs font-mono text-neutral-500 block mb-1">Número de Tarjeta</label>
-                      <input
-                        type="text"
-                        placeholder="4242 4242 4242 4242"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs font-mono text-neutral-900 focus:outline-none focus:border-neutral-900"
-                      />
+                  {/* Width Slider */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-neutral-500">Ancho:</span>
+                      <strong className="text-neutral-900">{widthCm} cm</strong>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-mono text-neutral-500 block mb-1">Nombre en Tarjeta</label>
-                        <input
-                          type="text"
-                          placeholder="Juan Pérez"
-                          value={cardHolder}
-                          onChange={(e) => setCardHolder(e.target.value)}
-                          className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-4 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs font-mono text-neutral-500 block mb-1">Vence</label>
-                          <input
-                            type="text"
-                            placeholder="12/28"
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
-                            className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3 py-2.5 text-xs font-mono text-neutral-900 focus:outline-none focus:border-neutral-900"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-mono text-neutral-500 block mb-1">CVC</label>
-                          <input
-                            type="password"
-                            placeholder="123"
-                            maxLength={4}
-                            value={cardCvc}
-                            onChange={(e) => setCardCvc(e.target.value)}
-                            className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3 py-2.5 text-xs font-mono text-neutral-900 focus:outline-none focus:border-neutral-900"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* METHOD 2: SPEI */}
-              {paymentMethod === 'spei' && (
-                <div className="p-5 rounded-2xl bg-[#fafafa] border border-black/[0.06] space-y-3 text-xs font-mono">
-                  <div className="text-sm font-heading font-bold text-neutral-900">
-                    Transferencia Interbancaria SPEI
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-black/[0.06]">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-500">Banco Receptor:</span>
-                      <strong className="text-neutral-900">STP / BBVA México</strong>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-neutral-500">CLABE Interbancaria:</span>
-                      <strong className="text-neutral-900 font-bold">6461 8015 7044 9119 92</strong>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-neutral-500">Beneficiario:</span>
-                      <strong className="text-neutral-900">Buy Me A Porsche 911</strong>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-neutral-500">Concepto de Pago:</span>
-                      <strong className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">P992-{(brandName || 'SPONSOR').substring(0, 8).toUpperCase()}</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* METHOD 3: MERCADO PAGO QR */}
-              {paymentMethod === 'mercadopago' && (
-                <div className="p-6 rounded-2xl bg-[#fafafa] border border-black/[0.06] text-center space-y-3">
-                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-xl border border-black/10 flex items-center justify-center">
-                    <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://buymeaporsche.com/pay"
-                      alt="QR Mercado Pago"
-                      className="w-full h-full object-contain"
+                    <input
+                      type="range"
+                      min={8}
+                      max={120}
+                      value={widthCm}
+                      onChange={(e) => {
+                        const w = Number(e.target.value);
+                        setWidthCm(w);
+                        if (lockAspectRatio && aspectRatio > 0) {
+                          setHeightCm(Math.max(5, Math.min(60, Math.round(w / aspectRatio))));
+                        }
+                      }}
+                      className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
                     />
                   </div>
-                  <span className="text-xs text-neutral-600 font-sans block">
-                    Escanea con la app de Mercado Pago o banca móvil CoDi.
-                  </span>
-                </div>
-              )}
 
-              {/* METHOD 4: CRIPTO USDT */}
-              {paymentMethod === 'crypto' && (
-                <div className="p-5 rounded-2xl bg-[#fafafa] border border-black/[0.06] space-y-2 text-xs font-mono">
-                  <div className="text-neutral-500">Dirección USDT (TRC-20):</div>
-                  <div className="p-2.5 bg-white rounded-xl border border-black/10 break-all font-bold text-neutral-900">
-                    TPor992CarreraShowroomMXN88x9911
+                  {/* Height Slider */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-neutral-500">Alto:</span>
+                      <strong className="text-neutral-900">{heightCm} cm</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={60}
+                      value={heightCm}
+                      onChange={(e) => {
+                        const h = Number(e.target.value);
+                        setHeightCm(h);
+                        if (lockAspectRatio && aspectRatio > 0) {
+                          setWidthCm(Math.max(8, Math.min(120, Math.round(h * aspectRatio))));
+                        }
+                      }}
+                      className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-2 rounded-lg"
+                    />
                   </div>
-                  <span className="text-[11px] text-neutral-500 block">
-                    Monto aproximado: ${(totalPriceMxn / 19.5).toFixed(2)} USDT
-                  </span>
                 </div>
-              )}
 
-              <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Pago protegido y garantizado por 2 años con folio oficial digital.</span>
+                {/* Account Name and Slogan Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-mono text-neutral-500 block mb-1">Tu Nombre o Cuenta *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Diego Arturo"
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-mono text-neutral-500 block mb-1">Mensaje o Slogan (Opcional):</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Patrocinador Oficial 911"
+                      value={slogan}
+                      onChange={(e) => setSlogan(e.target.value)}
+                      className="w-full bg-[#fafafa] border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Color and Style Tuning */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <span className="text-[11px] font-mono text-neutral-500 block mb-1.5">Fondo del Badge:</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {STICKER_BG_COLORS.map((c) => (
+                        <button
+                          key={c.hex}
+                          type="button"
+                          onClick={() => setStickerBgColor(c.hex)}
+                          className={`w-6 h-6 rounded-full border transition cursor-pointer ${
+                            stickerBgColor === c.hex ? 'ring-2 ring-neutral-900 ring-offset-1 scale-110' : 'border-black/20'
+                          }`}
+                          style={{ backgroundColor: c.hex === 'transparent' ? '#ffffff' : c.hex }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-mono text-neutral-500 block mb-1.5">Borde del Badge:</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {STICKER_BORDER_COLORS.map((c) => (
+                        <button
+                          key={c.hex}
+                          type="button"
+                          onClick={() => setStickerBorderColor(c.hex)}
+                          className={`w-6 h-6 rounded-full border transition cursor-pointer ${
+                            stickerBorderColor === c.hex ? 'ring-2 ring-neutral-900 ring-offset-1 scale-110' : 'border-black/20'
+                          }`}
+                          style={{ backgroundColor: c.hex === 'transparent' ? '#ffffff' : c.hex }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
+              {/* Live Price Summary Box & Continue Button */}
+              <div className="pt-6 border-t border-black/[0.08] space-y-4">
+                <div className="bg-neutral-950 text-white p-4 rounded-2xl space-y-2 font-mono text-xs shadow-md">
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Zona Ubicada:</span>
+                    <span className="text-sky-400 font-semibold">{currentZoneName}</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Superficie:</span>
+                    <span>{widthCm} x {heightCm} cm = <strong className="text-white">{areaCm2} cm²</strong></span>
+                  </div>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Tarifa de Zona:</span>
+                    <span className="text-white">${pricePerCm2} MXN / cm²</span>
+                  </div>
+                  <div className="pt-2 border-t border-white/10 flex justify-between items-end">
+                    <div>
+                      <span className="text-[10px] text-neutral-400 block">Total a Pagar (2 Años):</span>
+                      <strong className="text-emerald-400 text-xl font-bold">
+                        ${totalPriceMxn.toLocaleString()} MXN
+                      </strong>
+                    </div>
+                    <span className="text-[10px] text-neutral-400 font-normal">
+                      ${dailyCostMxn.toFixed(2)}/día
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playClickSound();
+                    setStep(2);
+                  }}
+                  className="w-full bg-neutral-900 hover:bg-neutral-800 text-white py-3.5 rounded-2xl font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <span>Proceder al Pago (${totalPriceMxn.toLocaleString()} MXN)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 
-          {/* STEP 3: SUCCESS CONFIRMATION & 3D IMMEDIATE ACTION */}
+          {/* STEP 2: Payment Gateway Checkout */}
+          {step === 2 && (
+            <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between">
+              <div className="space-y-6">
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mb-1">
+                      Paso 2 de 2 · Pasarela de Pago
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-heading font-bold text-neutral-900">
+                      Finalizar Patrocinio
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-xs font-mono text-neutral-500 hover:text-neutral-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Volver a Editar</span>
+                  </button>
+                </div>
+
+                {/* Order Summary Badge */}
+                <div className="p-4 rounded-2xl bg-[#fafafa] border border-black/[0.06] text-xs font-mono space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Patrocinador:</span>
+                    <strong className="text-neutral-900">{accountName || 'Diego Arturo'}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Zona en Porsche 911:</span>
+                    <span className="text-neutral-900 font-semibold">{currentZoneName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Medidas:</span>
+                    <span className="text-neutral-900">{widthCm} x {heightCm} cm ({areaCm2} cm²)</span>
+                  </div>
+                  <div className="pt-2 border-t border-black/[0.06] flex justify-between items-center">
+                    <span className="font-bold text-neutral-900">Monto Total:</span>
+                    <strong className="text-emerald-600 text-base font-bold">${totalPriceMxn.toLocaleString()} MXN</strong>
+                  </div>
+                </div>
+
+                {/* Payment Method Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-mono text-neutral-500 block">Elige tu método de pago seguro:</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('card')}
+                      className={`p-3 rounded-2xl border text-xs font-mono flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                        paymentMethod === 'card' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-[#fafafa] text-neutral-700 border-black/10'
+                      }`}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Tarjeta</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('spei')}
+                      className={`p-3 rounded-2xl border text-xs font-mono flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                        paymentMethod === 'spei' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-[#fafafa] text-neutral-700 border-black/10'
+                      }`}
+                    >
+                      <Building2 className="w-4 h-4" />
+                      <span>SPEI CLABE</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('mercadopago')}
+                      className={`p-3 rounded-2xl border text-xs font-mono flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                        paymentMethod === 'mercadopago' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-[#fafafa] text-neutral-700 border-black/10'
+                      }`}
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>MercadoPago</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('crypto')}
+                      className={`p-3 rounded-2xl border text-xs font-mono flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                        paymentMethod === 'crypto' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-[#fafafa] text-neutral-700 border-black/10'
+                      }`}
+                    >
+                      <Coins className="w-4 h-4" />
+                      <span>Cripto USDT</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Fields for Card Payment */}
+                {paymentMethod === 'card' && (
+                  <div className="space-y-3 p-4 bg-[#fafafa] rounded-2xl border border-black/[0.06]">
+                    <div>
+                      <label className="text-[11px] font-mono text-neutral-500 block mb-1">Número de Tarjeta</label>
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value)}
+                        className="w-full bg-white border border-black/10 rounded-xl px-3.5 py-2 text-xs font-mono text-neutral-900 focus:outline-none focus:border-neutral-900"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-mono text-neutral-500 block mb-1">Vencimiento</label>
+                        <input
+                          type="text"
+                          value={cardExpiry}
+                          onChange={(e) => setCardExpiry(e.target.value)}
+                          className="w-full bg-white border border-black/10 rounded-xl px-3.5 py-2 text-xs font-mono text-neutral-900 focus:outline-none focus:border-neutral-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-mono text-neutral-500 block mb-1">CVV</label>
+                        <input
+                          type="password"
+                          maxLength={4}
+                          value={cardCvc}
+                          onChange={(e) => setCardCvc(e.target.value)}
+                          className="w-full bg-white border border-black/10 rounded-xl px-3.5 py-2 text-xs font-mono text-neutral-900 focus:outline-none focus:border-neutral-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SPEI Instructions */}
+                {paymentMethod === 'spei' && (
+                  <div className="p-4 bg-neutral-900 text-white rounded-2xl space-y-2 text-xs font-mono">
+                    <span className="text-[10px] text-neutral-400 uppercase tracking-widest block">Transferencia Interbancaria Inmediata:</span>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Banco:</span>
+                      <strong className="text-white">STP / BBVA México</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">CLABE:</span>
+                      <strong className="text-emerald-400 font-mono">646180123456789012</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Concepto:</span>
+                      <strong className="text-white">PORSCHE 911-{accountName.substring(0, 8).toUpperCase() || 'SPONSOR'}</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* Crypto Instructions */}
+                {paymentMethod === 'crypto' && (
+                  <div className="p-4 bg-neutral-900 text-white rounded-2xl space-y-2 text-xs font-mono">
+                    <span className="text-[10px] text-neutral-400 uppercase tracking-widest block">Pago en Criptomonedas:</span>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">USDT / USDC (TRC20 / ERC20):</span>
+                      <strong className="text-emerald-400 font-mono text-[10px] truncate max-w-[200px]">0x71C...4e99</strong>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 text-[11px] text-neutral-500 font-sans">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Transacción encriptada con certificado de patrocinio digital instantáneo.</span>
+                </div>
+
+              </div>
+
+              {/* Submit Payment Button */}
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleExecutePayment}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Procesando pago y rotulando 3D...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Pagar & Rotular Ahora (${totalPriceMxn.toLocaleString()} MXN)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* STEP 3: Success Confirmation */}
           {step === 3 && (
-            <div className="p-6 rounded-3xl bg-[#fafafa] border border-black/[0.06] text-center space-y-5 animate-in zoom-in-95 duration-300">
-              <div className="w-16 h-16 rounded-full bg-emerald-500 text-white mx-auto flex items-center justify-center shadow-lg">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-600 font-bold block">
-                  ¡Transacción Confirmada con Éxito!
-                </span>
-                <h3 className="text-2xl font-heading font-bold text-neutral-900">
-                  {brandName || 'Tu Marca'} ya está en el Porsche 911 (992)
-                </h3>
-                <p className="text-xs text-neutral-500 max-w-md mx-auto font-sans">
-                  Tu sticker con tus dimensiones exactas ha sido grabado permanentemente en el modelo 3D y vinculado a la carrocería física para los 2 años de gira.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-black/[0.06] max-w-sm mx-auto text-xs font-mono space-y-2 text-left shadow-sm">
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Zona:</span>
-                  <span className="text-neutral-900 font-bold">{currentZone.name}</span>
+            <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between text-center my-auto">
+              <div className="space-y-4 my-auto">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
 
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Medidas:</span>
-                  <span className="text-neutral-900">{widthCm}×{heightCm} cm ({areaCm2} cm²)</span>
+                <div className="space-y-1.5">
+                  <h2 className="text-2xl font-heading font-bold text-neutral-900">
+                    ¡Felicidades, {newlyCreatedSponsor?.brandName || 'Patrocinador'}!
+                  </h2>
+                  <p className="text-xs text-neutral-500 max-w-sm mx-auto font-sans leading-relaxed">
+                    Tu diseño ya está rotulado en vivo en el <strong>Porsche 911 (992)</strong> y tu posición ha sido registrada en el Ranking Oficial por 2 años.
+                  </p>
                 </div>
 
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Inversión Cobrada:</span>
-                  <span className="text-emerald-600 font-bold">${totalPriceMxn.toLocaleString()} MXN</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Vigencia:</span>
-                  <span className="text-neutral-900 font-semibold">2 Años ({CONTRACT_DAYS} Días)</span>
+                <div className="p-4 rounded-2xl bg-[#fafafa] border border-black/[0.06] max-w-sm mx-auto text-xs font-mono space-y-1 text-left">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Zona:</span>
+                    <strong className="text-neutral-900">{newlyCreatedSponsor?.zoneName}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Superficie:</span>
+                    <span className="text-emerald-600 font-bold">{newlyCreatedSponsor?.areaCm2} cm²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Vigencia:</span>
+                    <span>2 Años (730 Días)</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <div className="space-y-2 pt-4">
                 <button
                   type="button"
                   onClick={() => {
-                    sounds.playClickSound();
-                    setIsBuyModalOpen(false);
-                    if (newlyCreatedSponsor) {
-                      focusSponsor(newlyCreatedSponsor.id);
-                    }
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Ver mi Sticker en el Porsche 3D</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClickSound();
                     if (newlyCreatedSponsor) {
                       setCertificateSponsor(newlyCreatedSponsor);
                     }
                   }}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-900 border border-black/10 text-xs font-semibold transition cursor-pointer shadow-sm"
+                  className="w-full bg-neutral-900 hover:bg-neutral-800 text-white py-3 rounded-2xl font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Award className="w-3.5 h-3.5 text-neutral-800" />
-                  <span>Ver Certificado Oficial</span>
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <span>Ver Certificado de Autenticidad</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newlyCreatedSponsor) {
+                      focusSponsor(newlyCreatedSponsor.id);
+                    }
+                    handleClose();
+                  }}
+                  className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 py-3 rounded-2xl font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Volver al Showroom 3D</span>
                 </button>
               </div>
-
             </div>
           )}
 
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-5 sm:p-6 border-t border-black/[0.06] flex items-center justify-between bg-white">
-          {step === 2 ? (
-            <button
-              type="button"
-              onClick={() => {
-                sounds.playClickSound();
-                setStep(1);
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-medium transition cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Modificar Tamaño</span>
-            </button>
-          ) : (
-            <div />
-          )}
-
-          {step === 1 ? (
-            <button
-              type="button"
-              onClick={() => {
-                sounds.playClickSound();
-                setStep(2);
-              }}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
-            >
-              <span>Pagar por mi Diseño (${totalPriceMxn.toLocaleString()} MXN)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          ) : step === 2 ? (
-            <button
-              type="button"
-              disabled={isProcessing}
-              onClick={handleExecutePayment}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer shadow-md disabled:opacity-50"
-            >
-              {isProcessing ? (
-                <span>Procesando Pago Seguro...</span>
-              ) : (
-                <span>Confirmar Pago (${totalPriceMxn.toLocaleString()} MXN)</span>
-              )}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                sounds.playClickSound();
-                setIsBuyModalOpen(false);
-                setDraftSponsor(null);
-              }}
-              className="px-6 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition cursor-pointer"
-            >
-              Cerrar
-            </button>
-          )}
         </div>
 
       </div>
