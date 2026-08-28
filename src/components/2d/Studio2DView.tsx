@@ -67,71 +67,142 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
     }
   }, []);
 
-  // Map 2D position to 3D coordinates & update parent
+  // Map 2D position to 3D coordinates & update parent with Multi-Zone Proportional Pricing
   const handleMap2DTo3D = (section: BlueprintSection, normX: number, normY: number) => {
     let pos3D: [number, number, number] = [0, 0.96, 1.2];
     let rot3D: [number, number, number] = [-1.25, 0, 0];
-    let detectedTier: SponsorTier = 'hood_central';
-    let detectedZoneName = 'Cofre Central Frontal';
-    let detectedPrice = 35;
 
     const relX = (normX - 50) / 35; // centered relative offset
 
+    // Estimate span in percentage based on widthCm and heightCm
+    const halfWNorm = Math.min(25, (widthCm / 185) * 45);
+    const halfHNorm = Math.min(25, (heightCm / 450) * 45);
+
+    const samplePts: { x: number; y: number; w: number }[] = [
+      { x: normX, y: normY, w: 0.36 },
+      { x: Math.max(10, normX - halfWNorm * 0.7), y: normY, w: 0.16 },
+      { x: Math.min(90, normX + halfWNorm * 0.7), y: normY, w: 0.16 },
+      { x: normX, y: Math.max(10, normY - halfHNorm * 0.7), w: 0.16 },
+      { x: normX, y: Math.min(90, normY + halfHNorm * 0.7), w: 0.16 },
+    ];
+
+    const zoneWeights: Record<string, { w: number; price: number; name: string; tier: SponsorTier }> = {};
+
     if (section === 'top' || section === 'all') {
-      // Top view (Y: 0% is rear decklid, 100% is front hood)
+      pos3D = [relX * 0.65, 0.96, 0.75 + ((normY - 60) / 40) * 0.5];
+      rot3D = [-1.25, 0, 0];
+
       if (normY < 32) {
-        // Tapa de Motor & Fascia Trasera (VIP)
         pos3D = [relX * 0.7, 0.98, -1.35];
         rot3D = [0.15, 0, 0];
-        detectedTier = 'rear_decklid';
-        detectedZoneName = 'Tapa de Motor & Fascia Trasera';
-        detectedPrice = 40;
       } else if (normY < 58) {
-        // Techo Panorámico
         pos3D = [relX * 0.5, 1.34, -0.1 + ((normY - 45) / 15) * 0.3];
         rot3D = [-Math.PI / 2, 0, 0];
-        detectedTier = 'body_standard';
-        detectedZoneName = 'Techo Panorámico';
-        detectedPrice = 25;
-      } else {
-        // Cofre Central Frontal
-        pos3D = [relX * 0.65, 0.96, 0.75 + ((normY - 60) / 40) * 0.5];
-        rot3D = [-1.25, 0, 0];
-        detectedTier = 'hood_central';
-        detectedZoneName = 'Cofre Central Frontal';
-        detectedPrice = 35;
       }
-    } else if (section === 'left') {
-      // Left Door & Fender (X: 0% front, 100% rear)
+
+      samplePts.forEach(({ x, y, w }) => {
+        let name = 'Cofre Central Frontal';
+        let price = 35;
+        let tier: SponsorTier = 'hood_central';
+
+        if (y < 32) {
+          name = 'Tapa de Motor Trasera';
+          price = 40;
+          tier = 'rear_decklid';
+        } else if (y < 58) {
+          name = 'Techo Panorámico';
+          price = 25;
+          tier = 'body_standard';
+        } else if (Math.abs(x - 50) > 28) {
+          name = 'Salpicaderas Delanteras';
+          price = 20;
+          tier = 'body_standard';
+        }
+
+        if (!zoneWeights[name]) {
+          zoneWeights[name] = { w: 0, price, name, tier };
+        }
+        zoneWeights[name].w += w;
+      });
+    } else if (section === 'left' || section === 'right') {
+      const isLeft = section === 'left';
       const relZ = ((normX - 50) / 50) * 1.5;
-      pos3D = [-1.02, 0.58 + ((50 - normY) / 50) * 0.3, -relZ];
-      rot3D = [0, -Math.PI / 2, 0];
-      detectedTier = 'premium_door';
-      detectedZoneName = 'Puerta / Costado Izquierdo';
-      detectedPrice = 25;
-    } else if (section === 'right') {
-      // Right Door & Fender (X: 0% rear, 100% front)
-      const relZ = ((normX - 50) / 50) * 1.5;
-      pos3D = [1.02, 0.58 + ((50 - normY) / 50) * 0.3, relZ];
-      rot3D = [0, Math.PI / 2, 0];
-      detectedTier = 'premium_door';
-      detectedZoneName = 'Puerta / Costado Derecho';
-      detectedPrice = 25;
+      pos3D = [isLeft ? -1.02 : 1.02, 0.58 + ((50 - normY) / 50) * 0.3, isLeft ? -relZ : relZ];
+      rot3D = [0, isLeft ? -Math.PI / 2 : Math.PI / 2, 0];
+
+      samplePts.forEach(({ x, w }) => {
+        let name = isLeft ? 'Puerta Izquierda' : 'Puerta Derecha';
+        let price = 25;
+        let tier: SponsorTier = 'premium_door';
+
+        if (x < 28) {
+          name = 'Salpicadera Frontal';
+          price = 20;
+          tier = 'body_standard';
+        } else if (x > 72) {
+          name = 'Costado Trasero';
+          price = 20;
+          tier = 'body_standard';
+        }
+
+        if (!zoneWeights[name]) {
+          zoneWeights[name] = { w: 0, price, name, tier };
+        }
+        zoneWeights[name].w += w;
+      });
     } else if (section === 'rear') {
-      // Rear bumper
       pos3D = [relX * 0.7, 0.45 + ((50 - normY) / 50) * 0.3, -1.9];
       rot3D = [0, Math.PI, 0];
-      detectedTier = 'body_standard';
-      detectedZoneName = 'Defensa Trasera';
-      detectedPrice = 15;
+
+      samplePts.forEach(({ y, w }) => {
+        let name = 'Defensa Trasera';
+        let price = 15;
+        let tier: SponsorTier = 'body_standard';
+
+        if (y < 45) {
+          name = 'Tapa de Motor Trasera';
+          price = 40;
+          tier = 'rear_decklid';
+        }
+
+        if (!zoneWeights[name]) {
+          zoneWeights[name] = { w: 0, price, name, tier };
+        }
+        zoneWeights[name].w += w;
+      });
     }
+
+    const totalW = Object.values(zoneWeights).reduce((sum, z) => sum + z.w, 0);
+    let blendedPrice = 0;
+    const covered: { name: string; pct: number; price: number }[] = [];
+    let primaryTier: SponsorTier = 'hood_central';
+    let maxWeight = -1;
+
+    for (const [, data] of Object.entries(zoneWeights)) {
+      const pct = Math.round((data.w / totalW) * 100);
+      blendedPrice += data.price * (data.w / totalW);
+      covered.push({ name: data.name, pct, price: data.price });
+      if (data.w > maxWeight) {
+        maxWeight = data.w;
+        primaryTier = data.tier;
+      }
+    }
+
+    covered.sort((a, b) => b.pct - a.pct);
+
+    let finalZoneName = covered[0]?.name || 'Cofre Central Frontal';
+    if (covered.length > 1 && covered[1].pct >= 15) {
+      finalZoneName = covered.filter((z) => z.pct >= 15).map((z) => `${z.name} (${z.pct}%)`).join(' + ');
+    }
+
+    const finalPricePerCm2 = Math.round(blendedPrice * 100) / 100;
 
     onUpdateDraftPosition({
       position3D: pos3D,
       rotation3D: rot3D,
-      tier: detectedTier,
-      zoneName: detectedZoneName,
-      pricePerCm2: detectedPrice,
+      tier: primaryTier,
+      zoneName: finalZoneName,
+      pricePerCm2: finalPricePerCm2,
     });
   };
 

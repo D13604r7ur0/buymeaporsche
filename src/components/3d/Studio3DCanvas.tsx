@@ -165,15 +165,14 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     if (!controls) return;
 
     if (interactMode === 'orbitCamera') {
+      controls.enabled = true;
       controls.enableRotate = true;
       controls.enableZoom = true;
       controls.enablePan = true;
     } else {
-      // In moveLogo mode, disable left-click rotation so drag moves the logo
-      // But keep right-click pan and scroll zoom fully active for maximum freedom!
-      controls.enableRotate = false;
-      controls.enableZoom = true;
-      controls.enablePan = true;
+      // In moveLogo mode, disable OrbitControls pointer capture completely
+      // so dragging the mouse strictly moves the logo across the car without moving the camera/car!
+      controls.enabled = false;
     }
   }, [interactMode]);
 
@@ -323,67 +322,86 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const rot3D: [number, number, number] = [euler.x, euler.y, euler.z];
       const pos3D: [number, number, number] = [offsetPoint.x, offsetPoint.y, offsetPoint.z];
 
-      // Automatic Zone & Price Detection based on 3D Coordinates
-      let detectedTier: SponsorTier = 'hood_central';
-      let detectedZoneName = 'Cofre Central Frontal';
-      let detectedPrice = 35;
+      const curW = draftSponsorRef.current?.widthCm || 35;
+      const curH = draftSponsorRef.current?.heightCm || 20;
+      const curAngle = draftSponsorRef.current?.rotationAngle || rotationAngle || 0;
 
-      // Rear Decklid & Engine Cover (Tapa de Motor Trasera)
-      if (pos3D[2] < -1.05 && pos3D[1] > 0.75) {
-        detectedTier = 'rear_decklid';
-        detectedZoneName = 'Tapa de Motor & Fascia Trasera';
-        detectedPrice = 40;
-      }
-      // Hood (Cofre)
-      else if (pos3D[2] > 0.65) {
-        detectedTier = 'hood_central';
-        detectedZoneName = 'Cofre Central Frontal';
-        detectedPrice = 35;
-      }
-      // Right Door (Puerta Derecha)
-      else if (pos3D[0] > 0.55) {
-        detectedTier = 'premium_door';
-        detectedZoneName = 'Puerta / Costado Derecho';
-        detectedPrice = 25;
-      }
-      // Left Door (Puerta Izquierda)
-      else if (pos3D[0] < -0.55) {
-        detectedTier = 'premium_door';
-        detectedZoneName = 'Puerta / Costado Izquierdo';
-        detectedPrice = 25;
-      }
-      // Roof (Techo)
-      else if (pos3D[1] > 1.22) {
-        detectedTier = 'body_standard';
-        detectedZoneName = 'Techo Panorámico';
-        detectedPrice = 25;
-      }
-      // Rear bumper
-      else if (pos3D[2] < -1.4) {
-        detectedTier = 'body_standard';
-        detectedZoneName = 'Defensa Trasera';
-        detectedPrice = 15;
-      }
-      // Standard Body / Bumpers
-      else {
-        detectedTier = 'body_standard';
-        detectedZoneName = 'Carrocería Lateral';
-        detectedPrice = 20;
+      // Multi-zone proportional calculation: if the sticker spans across 2 or more panels,
+      // calculate the exact proportional blended rate of each part touched!
+      const scale = 0.028;
+      const halfW = (curW * scale) / 2;
+      const halfH = (curH * scale) / 2;
+
+      const rotRad = THREE.MathUtils.degToRad(curAngle);
+      const rotCos = Math.cos(rotRad);
+      const rotSin = Math.sin(rotRad);
+
+      const localRight = right.clone().multiplyScalar(rotCos).add(up.clone().multiplyScalar(rotSin));
+      const localUp = up.clone().multiplyScalar(rotCos).sub(right.clone().multiplyScalar(rotSin));
+
+      const center = new THREE.Vector3(...pos3D);
+      const samplePoints: { pt: THREE.Vector3; w: number }[] = [
+        { pt: center.clone(), w: 0.36 },
+        { pt: center.clone().add(localRight.clone().multiplyScalar(halfW * 0.75)), w: 0.16 },
+        { pt: center.clone().sub(localRight.clone().multiplyScalar(halfW * 0.75)), w: 0.16 },
+        { pt: center.clone().add(localUp.clone().multiplyScalar(halfH * 0.75)), w: 0.16 },
+        { pt: center.clone().sub(localUp.clone().multiplyScalar(halfH * 0.75)), w: 0.16 },
+      ];
+
+      const classify = (p: THREE.Vector3) => {
+        if (p.z < -1.02 && p.y > 0.72) return { name: 'Tapa de Motor Trasera', price: 40, tier: 'rear_decklid' as SponsorTier };
+        if (p.z > 0.65 && p.y > 0.60 && Math.abs(p.x) < 0.62) return { name: 'Cofre Central Frontal', price: 35, tier: 'hood_central' as SponsorTier };
+        if (p.x < -0.55 && p.y < 1.18 && p.z >= -1.02 && p.z <= 0.65) return { name: 'Puerta Izquierda', price: 25, tier: 'premium_door' as SponsorTier };
+        if (p.x > 0.55 && p.y < 1.18 && p.z >= -1.02 && p.z <= 0.65) return { name: 'Puerta Derecha', price: 25, tier: 'premium_door' as SponsorTier };
+        if (p.y > 1.20 && Math.abs(p.x) < 0.55 && p.z >= -0.75 && p.z <= 0.45) return { name: 'Techo Panorámico', price: 25, tier: 'body_standard' as SponsorTier };
+        if (p.z < -1.40 && p.y <= 0.72) return { name: 'Defensa Trasera', price: 15, tier: 'body_standard' as SponsorTier };
+        if (p.z > 1.40 && p.y <= 0.60) return { name: 'Defensa Delantera', price: 15, tier: 'body_standard' as SponsorTier };
+        return { name: 'Salpicaderas & Costados', price: 20, tier: 'body_standard' as SponsorTier };
+      };
+
+      const zoneWeights: Record<string, { w: number; price: number; name: string; tier: SponsorTier }> = {};
+      samplePoints.forEach(({ pt, w }) => {
+        const c = classify(pt);
+        if (!zoneWeights[c.name]) {
+          zoneWeights[c.name] = { w: 0, price: c.price, name: c.name, tier: c.tier };
+        }
+        zoneWeights[c.name].w += w;
+      });
+
+      const totalW = Object.values(zoneWeights).reduce((sum, z) => sum + z.w, 0);
+      let blendedPrice = 0;
+      const covered: { name: string; pct: number; price: number }[] = [];
+      let primaryTier: SponsorTier = 'hood_central';
+      let maxWeight = -1;
+
+      for (const [, data] of Object.entries(zoneWeights)) {
+        const pct = Math.round((data.w / totalW) * 100);
+        blendedPrice += data.price * (data.w / totalW);
+        covered.push({ name: data.name, pct, price: data.price });
+        if (data.w > maxWeight) {
+          maxWeight = data.w;
+          primaryTier = data.tier;
+        }
       }
 
-      setActiveZoneName(detectedZoneName);
+      covered.sort((a, b) => b.pct - a.pct);
+
+      let finalZoneName = covered[0]?.name || 'Cofre Central Frontal';
+      if (covered.length > 1 && covered[1].pct >= 15) {
+        finalZoneName = covered.filter((z) => z.pct >= 15).map((z) => `${z.name} (${z.pct}%)`).join(' + ');
+      }
+
+      const finalPricePerCm2 = Math.round(blendedPrice * 100) / 100;
+
+      setActiveZoneName(finalZoneName);
 
       onUpdateDraftPosition({
         position3D: pos3D,
         rotation3D: rot3D,
-        tier: detectedTier,
-        zoneName: detectedZoneName,
-        pricePerCm2: detectedPrice,
+        tier: primaryTier,
+        zoneName: finalZoneName,
+        pricePerCm2: finalPricePerCm2,
       });
-
-      const curW = draftSponsorRef.current?.widthCm || 35;
-      const curH = draftSponsorRef.current?.heightCm || 20;
-      const curAngle = draftSponsorRef.current?.rotationAngle || rotationAngle || 0;
 
       projectDecal(pos3D, rot3D, curW, curH, curAngle, hit.object as THREE.Mesh);
     }
