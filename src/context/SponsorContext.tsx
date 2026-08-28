@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { Sponsor, ZoneConfig } from '../types/sponsor';
-import { INITIAL_SPONSORS, CAMPAIGN_GOAL_MXN, CONTRACT_YEARS, CONTRACT_DAYS, ZONES } from '../utils/sampleData';
+import { INITIAL_SPONSORS, CAMPAIGN_GOAL_MXN, CONTRACT_YEARS, CONTRACT_DAYS, TOTAL_AVAILABLE_CM2, ZONES } from '../utils/sampleData';
 import confetti from 'canvas-confetti';
 
 
@@ -74,6 +74,9 @@ interface SponsorContextType {
   totalRaisedMxn: number;
   goalProgressPercentage: number;
   totalAreaSoldCm2: number;
+  totalAvailableCm2: number;
+  remainingAreaCm2: number;
+  areaSoldPercentage: number;
   sponsorsCount: number;
   goalMxn: number;
   contractDays: number;
@@ -145,6 +148,12 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const totalAreaSoldCm2 = useMemo(() => {
     return sponsors.reduce((acc, s) => acc + s.areaCm2, 0);
   }, [sponsors]);
+
+  const totalAvailableCm2 = TOTAL_AVAILABLE_CM2;
+  const remainingAreaCm2 = Math.max(0, TOTAL_AVAILABLE_CM2 - totalAreaSoldCm2);
+  const areaSoldPercentage = useMemo(() => {
+    return Math.min(100, Number(((totalAreaSoldCm2 / TOTAL_AVAILABLE_CM2) * 100).toFixed(2)));
+  }, [totalAreaSoldCm2]);
 
   const goalProgressPercentage = useMemo(() => {
     return Math.min(100, Number(((totalRaisedMxn / CAMPAIGN_GOAL_MXN) * 100).toFixed(2)));
@@ -297,6 +306,9 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
         totalRaisedMxn,
         goalProgressPercentage,
         totalAreaSoldCm2,
+        totalAvailableCm2,
+        remainingAreaCm2,
+        areaSoldPercentage,
         sponsorsCount: sponsors.length,
         goalMxn: CAMPAIGN_GOAL_MXN,
         contractDays: CONTRACT_DAYS,

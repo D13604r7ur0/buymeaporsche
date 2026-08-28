@@ -21,6 +21,8 @@ const MainApp: React.FC = () => {
     goalMxn,
     goalProgressPercentage,
     contractYears,
+    remainingAreaCm2,
+    totalAvailableCm2,
   } = useSponsors();
 
   const scrollToSection = (id: string) => {
@@ -47,11 +49,14 @@ const MainApp: React.FC = () => {
         <PorscheScene />
 
         {/* Floating Top-Center Goal Badge */}
-        <div className="absolute top-20 sm:top-22 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none w-full max-w-md px-4 text-center">
+        <div className="absolute top-20 sm:top-22 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none w-full max-w-lg px-4 text-center">
           <div className="inline-flex items-center gap-2.5 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-black/[0.08] shadow-sm pointer-events-auto">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-mono font-medium text-neutral-800">
               ${totalRaisedMxn.toLocaleString()} de ${goalMxn.toLocaleString()} MXN
+            </span>
+            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+              {remainingAreaCm2.toLocaleString()} cm² libres de {totalAvailableCm2.toLocaleString()} cm²
             </span>
             <span className="text-[10px] font-mono text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
               {goalProgressPercentage}% · {contractYears} Años

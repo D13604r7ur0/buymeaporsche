@@ -4,6 +4,7 @@ import type { Sponsor, ZoneConfig, TrackEvent, SizeComparison } from '../types/s
 export const CAMPAIGN_GOAL_MXN = 3000000; // $3,000,000 MXN
 export const CONTRACT_YEARS = 2;
 export const CONTRACT_DAYS = 730; // 365 * 2
+export const TOTAL_AVAILABLE_CM2 = 120000; // 120,000 cm² disponibles en la carrocería (12 m²)
 
 export const ZONES: ZoneConfig[] = [
   {

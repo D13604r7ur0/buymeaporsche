@@ -13,7 +13,15 @@ import {
 
 export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = () => {
 
-  const { setIsBuyModalOpen, setDraftSponsor, setCameraPreset } = useSponsors();
+  const {
+    setIsBuyModalOpen,
+    setDraftSponsor,
+    setCameraPreset,
+    totalAreaSoldCm2,
+    totalAvailableCm2,
+    remainingAreaCm2,
+    areaSoldPercentage,
+  } = useSponsors();
 
   const [customWidth, setCustomWidth] = useState<number>(15);
   const [customHeight, setCustomHeight] = useState<number>(15);
@@ -64,17 +72,40 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
     <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-white border-t border-black/[0.06]">
       <div className="max-w-7xl mx-auto">
         
-        {/* Title */}
-        <div className="max-w-2xl mb-12">
-          <span className="text-[11px] font-mono tracking-widest uppercase text-neutral-500 block mb-2">
-            Transparencia & Retorno de Inversión
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold text-neutral-900 tracking-tight">
-            ¿Qué estás pagando exactamente?
-          </h2>
-          <p className="text-sm text-neutral-500 mt-2 font-sans">
-            Compara el tamaño físico de tu logo en centímetros cuadrados ($cm^2$) y su costo diario prorrateado durante los <strong>2 años ({CONTRACT_DAYS} días)</strong> de contrato sobre el <strong>Porsche 911 (992)</strong>.
-          </p>
+        {/* Title & Capacity Header */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
+          <div className="max-w-2xl">
+            <span className="text-[11px] font-mono tracking-widest uppercase text-neutral-500 block mb-2">
+              Transparencia & Retorno de Inversión
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-neutral-900 tracking-tight">
+              ¿Qué estás pagando exactamente?
+            </h2>
+            <p className="text-sm text-neutral-500 mt-2 font-sans">
+              Superficie total limitada a <strong>{totalAvailableCm2.toLocaleString()} cm² (12 m²)</strong> en la carrocería del <strong>Porsche 911 (992)</strong> durante los <strong>2 años ({CONTRACT_DAYS} días)</strong> de contrato.
+            </p>
+          </div>
+
+          <div className="bg-[#fafafa] border border-black/[0.06] p-4 rounded-2xl min-w-[280px] space-y-2 text-xs font-mono">
+            <div className="flex justify-between items-center text-neutral-500">
+              <span>Capacidad del Auto:</span>
+              <strong className="text-neutral-900">{totalAvailableCm2.toLocaleString()} cm²</strong>
+            </div>
+            <div className="flex justify-between items-center text-neutral-500">
+              <span>Espacio Ocupado:</span>
+              <strong className="text-neutral-900">{totalAreaSoldCm2.toLocaleString()} cm² ({areaSoldPercentage}%)</strong>
+            </div>
+            <div className="flex justify-between items-center text-neutral-500">
+              <span>Espacio Restante:</span>
+              <strong className="text-emerald-600 font-bold">{remainingAreaCm2.toLocaleString()} cm²</strong>
+            </div>
+            <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden mt-1">
+              <div
+                className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(areaSoldPercentage, 4)}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* 5 Minimalist Size Presets */}
