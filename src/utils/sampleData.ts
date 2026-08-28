@@ -163,17 +163,6 @@ export const TRACK_EVENTS_ROADMAP: TrackEvent[] = [
   },
   {
     id: 'track-3',
-    title: 'Visita Directa a tu Local o Negocio (Activación)',
-    location: 'A cualquier ciudad de la República Mexicana',
-    trackName: 'Tu Local, Sucursal o Evento Corporativo',
-    date: 'Sujeto a fechas disponibles en calendario',
-    yearSpan: 'Disponible durante los 2 años',
-    estimatedReach: 'Atracción masiva de clientes presenciales y contenido viral',
-    type: 'Activación en tu Negocio',
-    description: 'Pagando el costo de envío/traslado (y sujeto a fechas disponibles), transportamos el Porsche 911 rotulado hasta las puertas de tu negocio para inauguraciones, sesiones de fotos y activación de marca.',
-  },
-  {
-    id: 'track-4',
     title: 'Track Days & Gira en Autódromos (F1)',
     location: 'CDMX (Hermanos Rodríguez), Monterrey, San Luis Potosí',
     trackName: 'Autódromo Hermanos Rodríguez, Tangamanga & Monterrey',
