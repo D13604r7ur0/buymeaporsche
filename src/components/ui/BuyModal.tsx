@@ -330,7 +330,7 @@ export const BuyModal: React.FC = () => {
               Cómprame un Porsche · Estudio 3D Oficial
             </h1>
             <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">
-              Diseña sobre la chapa real del Porsche 911 (992) con ajuste seamless sin traslapes
+              Diseña y posiciona tu logo directamente sobre la chapa real del Porsche 911 (992)
             </span>
           </div>
         </div>
@@ -405,7 +405,7 @@ export const BuyModal: React.FC = () => {
                   Personalización del Logo en 3D
                 </h2>
                 <p className="text-xs text-neutral-500 font-sans mt-0.5 mb-3">
-                  Arrastra tu logo sobre el Porsche 3D. El sistema evita traslapes automáticamente con un encaje seamless.
+                  Arrastra tu logo directamente sobre la carrocería del Porsche 3D.
                 </p>
 
                 {/* 3D Mode Toggle Button */}
