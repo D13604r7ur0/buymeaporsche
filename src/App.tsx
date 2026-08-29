@@ -8,7 +8,6 @@ import { BuyModal } from './components/ui/BuyModal';
 import { SponsorDetailModal } from './components/ui/SponsorDetailModal';
 import { CertificateModal } from './components/ui/CertificateModal';
 import { useSponsors } from './context/SponsorContext';
-import { ChevronDown } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'3d' | 'roi' | 'events' | 'directory'>('3d');
@@ -20,13 +19,6 @@ const MainApp: React.FC = () => {
     contractYears,
     remainingAreaCm2,
   } = useSponsors();
-
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-neutral-900 flex flex-col font-sans selection:bg-neutral-900 selection:text-white">
@@ -58,15 +50,6 @@ const MainApp: React.FC = () => {
             </span>
           </div>
         </div>
-
-        {/* Floating Discrete Scroll-to-Content Trigger */}
-        <button
-          onClick={() => scrollToSection('sponsors')}
-          className="hidden md:flex absolute bottom-8 right-8 z-20 items-center gap-1.5 bg-[#0c0e15]/90 hover:bg-white text-neutral-300 hover:text-neutral-950 px-4 py-2 rounded-full border border-white/15 shadow-2xl text-xs font-mono font-medium transition cursor-pointer backdrop-blur-xl group"
-        >
-          <span>Patrocinadores</span>
-          <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
-        </button>
 
       </section>
 
