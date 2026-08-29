@@ -317,7 +317,7 @@ export const LeaderboardRanking: React.FC<{ onNavigateTo3D?: () => void }> = () 
                             ${sponsor.totalPriceMxn.toLocaleString()} MXN
                           </span>
                           <span className="text-[10px] text-neutral-400 block font-normal">
-                            ${(sponsor.totalPriceMxn / 730).toFixed(2)}/día
+                            ${sponsor.pricePerCm2 || 35} MXN/cm²
                           </span>
                         </td>
 

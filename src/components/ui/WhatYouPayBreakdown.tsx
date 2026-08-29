@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
-import { CONTRACT_DAYS, ZONES } from '../../utils/sampleData';
+import { ZONES } from '../../utils/sampleData';
 import type { SponsorTier } from '../../types/sponsor';
 import { ArrowRight, Calculator, Sparkles } from 'lucide-react';
 
@@ -22,8 +22,6 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
   const currentZone = ZONES.find((z) => z.id === selectedZoneTier) || ZONES[1];
   const customArea = customWidth * customHeight;
   const customTotalMxn = customArea * currentZone.pricePerCm2;
-  const customDailyCost = customTotalMxn / CONTRACT_DAYS;
-  const customMonthlyCost = customDailyCost * 30.4;
 
   return (
     <section id="calculator" className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-white border-t border-black/[0.06]">
@@ -40,7 +38,7 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
               ¿Qué estás pagando exactamente?
             </h2>
             <p className="text-sm text-neutral-500 mt-2 font-sans">
-              El costo se calcula estrictamente por centímetro cuadrado ($cm^2$) de tu diseño en la carrocería del <strong>Porsche 911 (992)</strong> durante los <strong>2 años ({CONTRACT_DAYS} días)</strong> de contrato.
+              El costo se calcula estrictamente por centímetro cuadrado ($cm^2$) de tu diseño en la carrocería del <strong>Porsche 911 (992)</strong> durante los <strong>2 años</strong> de contrato.
             </p>
           </div>
 
@@ -152,17 +150,12 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
 
               <div className="flex justify-between items-center text-neutral-500">
                 <span>Vigencia:</span>
-                <span className="text-emerald-600 font-bold">2 Años ({CONTRACT_DAYS} Días)</span>
+                <span className="text-emerald-600 font-bold">2 Años de Contrato</span>
               </div>
 
               <div className="flex justify-between items-center text-neutral-500">
-                <span>Costo / Día:</span>
-                <span className="text-emerald-600 text-lg font-bold">${customDailyCost.toFixed(2)} MXN</span>
-              </div>
-
-              <div className="flex justify-between items-center text-neutral-500">
-                <span>Costo / Mes aprox:</span>
-                <span className="text-neutral-900 font-semibold">${customMonthlyCost.toFixed(2)} MXN</span>
+                <span>Tarifa de Zona:</span>
+                <span className="text-emerald-600 text-lg font-bold">${currentZone.pricePerCm2} MXN / cm²</span>
               </div>
 
               <div className="pt-3 border-t border-black/[0.06] flex justify-between items-end">

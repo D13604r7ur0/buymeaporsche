@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
 import type { SponsorTier } from '../../types/sponsor';
-import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
+import { CONTRACT_YEARS } from '../../utils/sampleData';
 import { generateFallbackLogo } from '../../utils/brandLogos';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
@@ -116,7 +116,6 @@ export const BuyModal: React.FC = () => {
   const effectiveAreaCm2 = overlapResult.effectiveAreaCm2;
   const effectiveTotalPriceMxn = effectiveAreaCm2 * pricePerCm2;
   const nominalTotalPriceMxn = areaCm2 * pricePerCm2;
-  const dailyCostMxn = effectiveTotalPriceMxn / CONTRACT_DAYS;
 
   // Auto-snap to free spot on this panel
   const handleAutoSnapFree = () => {
@@ -1114,9 +1113,6 @@ export const BuyModal: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-neutral-400 font-normal">
-                    ${dailyCostMxn.toFixed(2)}/día
-                  </span>
                 </div>
               </div>
 

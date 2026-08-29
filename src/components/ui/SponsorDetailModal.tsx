@@ -14,7 +14,6 @@ export const SponsorDetailModal: React.FC = () => {
     setCertificateSponsor,
     focusSponsor,
     recordClick,
-    contractDays,
   } = useSponsors();
 
   if (!selectedSponsor) return null;
@@ -23,8 +22,6 @@ export const SponsorDetailModal: React.FC = () => {
     recordClick(selectedSponsor.id);
     window.open(selectedSponsor.targetUrl, '_blank', 'noopener,noreferrer');
   };
-
-  const dailyCost = selectedSponsor.totalPriceMxn / contractDays;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
@@ -88,8 +85,8 @@ export const SponsorDetailModal: React.FC = () => {
             </div>
 
             <div className="p-3 rounded-2xl bg-[#fafafa] border border-black/[0.04]">
-              <span className="text-[10px] text-neutral-400 block">Costo / Día:</span>
-              <strong className="text-emerald-600">${dailyCost.toFixed(2)}</strong>
+              <span className="text-[10px] text-neutral-400 block">Superficie:</span>
+              <strong className="text-emerald-600">{selectedSponsor.areaCm2} cm²</strong>
             </div>
 
             <div className="p-3 rounded-2xl bg-[#fafafa] border border-black/[0.04]">
