@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
-import { Compass, RotateCw, ZoomIn, ZoomOut, LayoutGrid } from 'lucide-react';
+import { detectSponsorOverlap, type OverlapDetectionResult } from '../../utils/overlapDetection';
+import { Compass, RotateCw, ZoomIn, ZoomOut, LayoutGrid, AlertTriangle } from 'lucide-react';
 
 interface Studio2DViewProps {
   draftSponsor: Partial<Sponsor>;
@@ -18,6 +19,7 @@ interface Studio2DViewProps {
   flipY: boolean;
   filterStyle: 'original' | 'white' | 'black';
   opacity: number;
+  existingSponsors?: Sponsor[];
 }
 
 type BlueprintSection = 'all' | 'top' | 'left' | 'right' | 'rear';
@@ -32,11 +34,25 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
   flipY,
   filterStyle,
   opacity,
+  existingSponsors = [],
 }) => {
   const [activeSection, setActiveSection] = useState<BlueprintSection>('top');
   const [zoom, setZoom] = useState<number>(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef<boolean>(false);
+
+  // Overlap detection
+  const overlapResult: OverlapDetectionResult = useMemo(() => {
+    return detectSponsorOverlap(
+      {
+        ...draftSponsor,
+        rotationAngle,
+        widthCm,
+        heightCm,
+      },
+      existingSponsors
+    );
+  }, [draftSponsor, rotationAngle, widthCm, heightCm, existingSponsors]);
 
   // Normalized 2D coordinates within the active section [0, 100]%
   const [logo2DPos, setLogo2DPos] = useState<{ x: number; y: number }>({ x: 50, y: 72 });
@@ -682,11 +698,27 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
           className="z-30 pointer-events-auto cursor-move flex items-center justify-center group"
         >
           {/* Real Vinyl Cutout Border & Corner Grips */}
-          <div className="absolute -inset-1 border-2 border-dashed border-sky-400/90 rounded-xl pointer-events-none group-hover:border-white shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
+          <div
+            className={`absolute -inset-1 border-2 border-dashed rounded-xl pointer-events-none transition ${
+              overlapResult.hasOverlap
+                ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.75)] animate-pulse'
+                : 'border-sky-400/90 group-hover:border-white shadow-[0_0_15px_rgba(56,189,248,0.5)]'
+            }`}
+          />
           
-          {/* Centimeters Badge */}
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-neutral-950/90 border border-sky-400 text-sky-300 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-lg">
-            {widthCm}x{heightCm}cm ({widthCm * heightCm}cm²)
+          {/* Centimeters Badge / Overlap Badge */}
+          <div
+            className={`absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg flex items-center gap-1 ${
+              overlapResult.hasOverlap
+                ? 'bg-red-950 border border-red-500 text-red-200'
+                : 'bg-neutral-950/90 border border-sky-400 text-sky-300'
+            }`}
+          >
+            {overlapResult.hasOverlap && <AlertTriangle className="w-3 h-3 text-red-400" />}
+            <span>
+              {widthCm}x{heightCm}cm ({widthCm * heightCm}cm²)
+              {overlapResult.hasOverlap ? ` · ${overlapResult.effectiveAreaCm2}cm² netos` : ''}
+            </span>
           </div>
 
           {/* Logo / Image Content */}

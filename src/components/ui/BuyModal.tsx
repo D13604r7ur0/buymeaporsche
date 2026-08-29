@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
 import type { SponsorTier } from '../../types/sponsor';
@@ -7,6 +7,11 @@ import { generateFallbackLogo } from '../../utils/brandLogos';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
 import { TermsModal } from './TermsModal';
+import { 
+  detectSponsorOverlap, 
+  findNearestFreePosition, 
+  type OverlapDetectionResult 
+} from '../../utils/overlapDetection';
 import { 
   X, 
   Upload, 
@@ -26,7 +31,8 @@ import {
   Sliders,
   Maximize2,
   Globe,
-  ShieldAlert
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 
 const CM2_PRESETS = [
@@ -88,8 +94,53 @@ export const BuyModal: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const areaCm2 = widthCm * heightCm;
-  const totalPriceMxn = areaCm2 * pricePerCm2;
-  const dailyCostMxn = totalPriceMxn / CONTRACT_DAYS;
+
+  // Real-time overlap collision calculation
+  const overlapResult: OverlapDetectionResult = useMemo(() => {
+    return detectSponsorOverlap(
+      {
+        id: 'draft',
+        position3D: currentPosition3D,
+        rotation3D: currentRotation3D,
+        rotationAngle,
+        widthCm,
+        heightCm,
+        tier: selectedTier,
+        zoneName: currentZoneName,
+      },
+      sponsors
+    );
+  }, [currentPosition3D, currentRotation3D, rotationAngle, widthCm, heightCm, selectedTier, currentZoneName, sponsors]);
+
+  const hasOverlap = overlapResult.hasOverlap;
+  const effectiveAreaCm2 = overlapResult.effectiveAreaCm2;
+  const effectiveTotalPriceMxn = effectiveAreaCm2 * pricePerCm2;
+  const nominalTotalPriceMxn = areaCm2 * pricePerCm2;
+  const dailyCostMxn = effectiveTotalPriceMxn / CONTRACT_DAYS;
+
+  // Auto-snap to free spot on this panel
+  const handleAutoSnapFree = () => {
+    sounds.playClickSound();
+    const freePos = findNearestFreePosition(
+      {
+        id: 'draft',
+        position3D: currentPosition3D,
+        rotation3D: currentRotation3D,
+        rotationAngle,
+        widthCm,
+        heightCm,
+        tier: selectedTier,
+        zoneName: currentZoneName,
+      },
+      sponsors
+    );
+
+    if (freePos) {
+      setCurrentPosition3D(freePos);
+    } else {
+      alert('No se encontró espacio libre continuo en este panel para las dimensiones actuales. Te sugerimos reducir el tamaño en cm o seleccionar otra zona (ej. Techo, Puertas o Tapa Trasera).');
+    }
+  };
 
   // Sync targetAreaCm2 with widthCm and heightCm
   useEffect(() => {
@@ -128,8 +179,10 @@ export const BuyModal: React.FC = () => {
       filterStyle,
       opacity,
       areaCm2,
+      effectiveAreaCm2,
+      overlappedAreaCm2: overlapResult.totalOverlappedAreaCm2,
       pricePerCm2,
-      totalPriceMxn,
+      totalPriceMxn: effectiveTotalPriceMxn,
       zoneName: currentZoneName,
       position3D: currentPosition3D,
       rotation3D: currentRotation3D,
@@ -159,7 +212,9 @@ export const BuyModal: React.FC = () => {
     currentZoneName,
     pricePerCm2,
     areaCm2,
-    totalPriceMxn,
+    effectiveAreaCm2,
+    effectiveTotalPriceMxn,
+    overlapResult.totalOverlappedAreaCm2,
     setDraftSponsor,
   ]);
 
@@ -296,8 +351,10 @@ export const BuyModal: React.FC = () => {
         filterStyle,
         opacity,
         areaCm2,
+        effectiveAreaCm2,
+        overlappedAreaCm2: overlapResult.totalOverlappedAreaCm2,
         pricePerCm2,
-        totalPriceMxn,
+        totalPriceMxn: effectiveTotalPriceMxn,
         position3D: currentPosition3D,
         rotation3D: currentRotation3D,
         scale3D: [widthCm / 28, heightCm / 28, 1],
@@ -958,27 +1015,103 @@ export const BuyModal: React.FC = () => {
 
             </div>
 
+            {/* Overlap & Collision Inspector Card */}
+            {hasOverlap ? (
+              <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-900">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>SUPERPOSICIÓN CON OTROS LOGOS DETECTADA</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-900 shrink-0">
+                    {overlapResult.overlapPercentage}% Solapado
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-amber-950 leading-relaxed font-sans">
+                  Tu logo coincide con el espacio de:{' '}
+                  <strong>{overlapResult.overlappingSponsors.map((o) => `"${o.brandName}" (${o.overlapAreaCm2} cm²)`).join(', ')}</strong>.
+                  Para garantizar equidad, <strong>solo se cobrará el área neta libre de chapa del Porsche ({effectiveAreaCm2} cm² de {areaCm2} cm²)</strong>.
+                </p>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleAutoSnapFree}
+                    className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-mono text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-yellow-200" />
+                    <span>Auto-Reubicar a Espacio Libre</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ratio = (widthCm / heightCm) || 1.5;
+                      const reducedW = Math.max(10, Math.round(widthCm * 0.75));
+                      const reducedH = Math.max(6, Math.round(reducedW / ratio));
+                      setWidthCm(reducedW);
+                      setHeightCm(reducedH);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-100 border border-amber-300 text-amber-900 font-mono text-[11px] transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Reducir 25% Tamaño</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-mono text-emerald-900 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Espacio 100% Libre en la Carrocería</span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-700 font-semibold bg-emerald-100/60 px-2 py-0.5 rounded-md">
+                  0% Superposición
+                </span>
+              </div>
+            )}
+
             {/* Live Price Summary Box & Direct Confirm Button */}
-            <div className="pt-6 border-t border-black/[0.08] space-y-4">
+            <div className="pt-4 border-t border-black/[0.08] space-y-4">
               <div className="bg-neutral-950 text-white p-4 rounded-2xl space-y-2 font-mono text-xs shadow-md">
                 <div className="flex justify-between text-neutral-400">
                   <span>Zona Ubicada:</span>
                   <span className="text-sky-400 font-semibold">{currentZoneName}</span>
                 </div>
                 <div className="flex justify-between text-neutral-400">
-                  <span>Superficie Comprada:</span>
-                  <span>{widthCm} x {heightCm} cm = <strong className="text-emerald-400 font-bold">{areaCm2} cm²</strong></span>
+                  <span>Superficie Total del Logo:</span>
+                  <span>{widthCm} x {heightCm} cm = <strong>{areaCm2} cm²</strong></span>
                 </div>
+
+                {hasOverlap && (
+                  <>
+                    <div className="flex justify-between text-amber-400 text-[11px]">
+                      <span>Área Solapada (No Cobrada):</span>
+                      <span>-{overlapResult.totalOverlappedAreaCm2} cm² ({overlapResult.overlapPercentage}%)</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-400 font-bold">
+                      <span>Superficie Neta Cobrada en Porsche:</span>
+                      <span>{effectiveAreaCm2} cm²</span>
+                    </div>
+                  </>
+                )}
+
                 <div className="flex justify-between text-neutral-400">
                   <span>Tarifa de Zona:</span>
                   <span className="text-white">${pricePerCm2} MXN / cm²</span>
                 </div>
+
                 <div className="pt-2 border-t border-white/10 flex justify-between items-end">
                   <div>
                     <span className="text-[10px] text-neutral-400 block">Total a Pagar (2 Años):</span>
                     <strong className="text-emerald-400 text-xl font-bold">
-                      ${totalPriceMxn.toLocaleString()} MXN
+                      ${effectiveTotalPriceMxn.toLocaleString()} MXN
                     </strong>
+                    {hasOverlap && (
+                      <span className="text-[9px] text-emerald-300 block font-normal mt-0.5">
+                        ⚡ Ahorro de ${(nominalTotalPriceMxn - effectiveTotalPriceMxn).toLocaleString()} MXN por área cubierta
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] text-neutral-400 font-normal">
                     ${dailyCostMxn.toFixed(2)}/día
@@ -1033,7 +1166,10 @@ export const BuyModal: React.FC = () => {
                   <>
                     <CheckCircle2 className="w-4 h-4" />
                     <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                    <span>Confirmar & Guardar en el Porsche (${totalPriceMxn.toLocaleString()} MXN)</span>
+                    <span>
+                      Confirmar & Guardar en el Porsche (${effectiveTotalPriceMxn.toLocaleString()} MXN
+                      {hasOverlap ? ` · ${effectiveAreaCm2} cm² netos` : ''})
+                    </span>
                   </>
                 )}
               </button>

@@ -26,6 +26,8 @@ export interface Sponsor {
   widthCm: number;
   heightCm: number;
   areaCm2: number;
+  effectiveAreaCm2?: number;
+  overlappedAreaCm2?: number;
   pricePerCm2: number;
   totalPriceMxn: number;
   

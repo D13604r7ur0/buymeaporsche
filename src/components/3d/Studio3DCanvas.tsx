@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
@@ -9,7 +9,26 @@ import { createSponsorTexture } from './SponsorDecalTexture';
 import { calculateSurfaceOrientation, isMeshForbidden, getNearbyPaintMeshes } from './decalHelpers';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
-import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Plus, Minus, RefreshCw, Play, Pause } from 'lucide-react';
+import { 
+  detectSponsorOverlap, 
+  findNearestFreePosition, 
+  type OverlapDetectionResult 
+} from '../../utils/overlapDetection';
+import { 
+  Loader2, 
+  RotateCw, 
+  ZoomIn, 
+  ZoomOut, 
+  Compass, 
+  Plus, 
+  Minus, 
+  RefreshCw, 
+  Play, 
+  Pause,
+  AlertTriangle,
+  CheckCircle2,
+  Sparkles
+} from 'lucide-react';
 
 
 
@@ -52,6 +71,37 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   // Ref to avoid stale closures during high-frequency drag events
   const draftSponsorRef = useRef<Partial<Sponsor>>({ ...draftSponsor, rotationAngle });
   draftSponsorRef.current = { ...draftSponsor, rotationAngle };
+
+  // Real-time overlap collision calculation
+  const overlapResult: OverlapDetectionResult = useMemo(() => {
+    return detectSponsorOverlap(
+      {
+        ...draftSponsor,
+        rotationAngle: rotationAngle ?? draftSponsor.rotationAngle ?? 0,
+      },
+      existingSponsors
+    );
+  }, [draftSponsor, existingSponsors, rotationAngle]);
+
+  // Auto-snap helper to find nearest clear space
+  const handleAutoSnapFree = () => {
+    const freePos = findNearestFreePosition(
+      {
+        ...draftSponsor,
+        rotationAngle: rotationAngle ?? draftSponsor.rotationAngle ?? 0,
+      },
+      existingSponsors
+    );
+    if (freePos) {
+      onUpdateDraftPosition({
+        position3D: freePos,
+        rotation3D: draftSponsor.rotation3D || [-1.25, 0, 0],
+        tier: draftSponsor.tier || 'hood_central',
+        zoneName: draftSponsor.zoneName || 'Cofre Central Frontal',
+        pricePerCm2: draftSponsor.pricePerCm2 || 45,
+      });
+    }
+  };
 
   // Three.js instances
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -222,7 +272,35 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       fallbackMesh.renderOrder = 100;
       draftGroup.add(fallbackMesh);
     }
-  }, []);
+
+    // Check collision and render 3D highlight warning box if overlapping
+    const colCheck = detectSponsorOverlap(
+      {
+        ...draftSponsorRef.current,
+        position3D: pos,
+        rotation3D: rot,
+        widthCm,
+        heightCm,
+        rotationAngle: angleDeg,
+      },
+      existingSponsors
+    );
+
+    if (colCheck.hasOverlap) {
+      const boxGeo = new THREE.BoxGeometry(w * 1.04, h * 1.04, 0.04);
+      const wireMat = new THREE.MeshBasicMaterial({
+        color: '#ef4444',
+        wireframe: true,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const wireMesh = new THREE.Mesh(boxGeo, wireMat);
+      wireMesh.position.copy(position);
+      wireMesh.rotation.copy(finalEuler);
+      wireMesh.renderOrder = 102;
+      draftGroup.add(wireMesh);
+    }
+  }, [existingSponsors]);
 
   // Surface placement math helper (Raycasting onto body panels)
   const placeLogoAtScreenCoord = useCallback((clientX: number, clientY: number) => {
@@ -664,11 +742,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Floating Top Controls: Zone Badge & Auto-Rotate Toggle */}
+      {/* Floating Top Controls: Zone Badge, Collision Status & Auto-Rotate Toggle */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         
-        {/* Live Detected Zone Badge */}
-        <div className="pointer-events-auto">
+        {/* Left: Live Detected Zone Badge */}
+        <div className="pointer-events-auto flex items-center gap-2">
           {activeZoneName && (
             <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2">
               <Compass className="w-3.5 h-3.5 text-sky-400" />
@@ -677,7 +755,38 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
           )}
         </div>
 
-        {/* Auto-Rotate Toggle */}
+        {/* Center: Real-time Overlap Collision Alert / Clear Space Indicator */}
+        <div className="pointer-events-auto">
+          {overlapResult.hasOverlap ? (
+            <div className="flex items-center gap-2 bg-red-950/90 border border-red-500/60 text-red-200 text-xs font-mono px-3.5 py-1.5 rounded-2xl shadow-xl backdrop-blur-md">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 animate-bounce" />
+              <div className="flex flex-col text-left">
+                <span className="font-bold text-red-100 text-[11px]">
+                  ⚠️ Superposición: {overlapResult.totalOverlappedAreaCm2} cm² ({overlapResult.overlapPercentage}%)
+                </span>
+                <span className="text-[9px] text-red-300">
+                  Solapa con {overlapResult.overlappingSponsors[0]?.brandName} · Cobro neto: {overlapResult.effectiveAreaCm2} cm²
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAutoSnapFree}
+                className="ml-1 px-2.5 py-1 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] uppercase transition cursor-pointer shadow-md flex items-center gap-1 shrink-0"
+                title="Mover automáticamente a un espacio libre en este panel"
+              >
+                <Sparkles className="w-3 h-3 text-yellow-300" />
+                <span>Auto-Ajustar</span>
+              </button>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono px-3 py-1.5 rounded-2xl shadow-md backdrop-blur-md">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Chapa 100% Libre</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Auto-Rotate Toggle */}
         <div className="pointer-events-auto">
           <button
             type="button"
