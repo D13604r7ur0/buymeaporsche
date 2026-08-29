@@ -6,68 +6,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { loadRealPorscheModel } from './RealPorscheLoader';
 import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
+import { calculateSurfaceOrientation, isMeshForbidden, getNearbyPaintMeshes } from './decalHelpers';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
 import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw, Play, Pause, Sparkles } from 'lucide-react';
 
-const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
-  const n = mesh.name.toLowerCase();
-  const m = (Array.isArray(mesh.material) ? mesh.material[0]?.name : mesh.material?.name)?.toLowerCase() || '';
-  return (
-    n.includes('glass') ||
-    n.includes('window') ||
-    n.includes('windshield') ||
-    n.includes('windscreen') ||
-    n.includes('cristal') ||
-    n.includes('vidrio') ||
-    n.includes('light') ||
-    n.includes('headlight') ||
-    n.includes('taillight') ||
-    n.includes('lamp') ||
-    n.includes('faro') ||
-    n.includes('calavera') ||
-    n.includes('lens') ||
-    n.includes('reflector') ||
-    n.includes('signal') ||
-    n.includes('turn') ||
-    n.includes('indicator') ||
-    n.includes('led') ||
-    n.includes('fog') ||
-    n.includes('stop') ||
-    n.includes('drl') ||
-    n.includes('optic') ||
-    n.includes('mirror') ||
-    n.includes('wheel') ||
-    n.includes('rim') ||
-    n.includes('tire') ||
-    n.includes('tyre') ||
-    n.includes('brake') ||
-    n.includes('caliper') ||
-    n.includes('disc') ||
-    n.includes('rotor') ||
-    n.includes('hub') ||
-    n.includes('rueda') ||
-    n.includes('llanta') ||
-    n.includes('rin') ||
-    n.includes('freno') ||
-    n.includes('interior') ||
-    n.includes('seat') ||
-    n.includes('steering') ||
-    n.includes('chassis') ||
-    n.includes('exhaust') ||
-    m.includes('glass') ||
-    m.includes('window') ||
-    m.includes('lights') ||
-    m.includes('light') ||
-    m.includes('lamp') ||
-    m.includes('lens') ||
-    m.includes('wheel') ||
-    m.includes('rim') ||
-    m.includes('tire') ||
-    m.includes('tyre') ||
-    m.includes('brake')
-  );
-};
+
 
 interface Studio3DCanvasProps {
   draftSponsor: Partial<Sponsor>;
@@ -220,9 +164,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       draftGroup.remove(draftGroup.children[0]);
     }
 
+    const position = new THREE.Vector3(...pos);
     const meshesToProject = targetMesh 
       ? [targetMesh].filter((m) => !isMeshForbidden(m))
-      : paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
+      : getNearbyPaintMeshes(paintMeshesRef.current, position, 0.35);
 
     if (meshesToProject.length === 0) return;
 
@@ -240,14 +185,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       side: THREE.DoubleSide,
     });
 
-    const position = new THREE.Vector3(...pos);
-    
     // Construct orientation matrix from base euler + rotation angle around normal
     const baseEuler = new THREE.Euler(...rot, 'YXZ');
     const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
-    
     const normal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
-    
+
     if (angleDeg !== 0) {
       const rotAngleRad = THREE.MathUtils.degToRad(angleDeg);
       const rotMatrix = new THREE.Matrix4().makeRotationAxis(normal, rotAngleRad);
@@ -255,16 +197,15 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
 
     const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
-    
-    // Scale derived directly from centimeters with skin-tight surface depth
+
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
-    const d = 0.25;
+    const d = 0.08;
 
     const size = new THREE.Vector3(w, h, d);
 
-    // Create DecalGeometry exclusively on valid paint body meshes
+    // Create DecalGeometry exclusively on valid nearby paint body meshes
     meshesToProject.forEach((mesh) => {
       if (isMeshForbidden(mesh)) return;
 
@@ -321,29 +262,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const offsetPoint = point.clone().add(normal.clone().multiplyScalar(0.012));
 
       // Calculate stable, upright coordinate basis for decal surface
-      let right = new THREE.Vector3();
-      let up = new THREE.Vector3();
-
-      if (Math.abs(normal.y) > 0.65) {
-        // Horizontal surface: Hood, Roof, Wing top
-        const forward = new THREE.Vector3(0, 0, 1);
-        right.crossVectors(forward, normal).normalize();
-        up.crossVectors(normal, right).normalize();
-      } else {
-        // Vertical surface: Doors, Bumpers, Sides
-        const worldUp = new THREE.Vector3(0, 1, 0);
-        right.crossVectors(worldUp, normal).normalize();
-        up.crossVectors(normal, right).normalize();
-      }
-
-      // Handle Left vs Right door so logo is never mirrored or inverted
-      if (normal.x < -0.4) {
-        right.negate();
-      }
-
-      const rotMatrix = new THREE.Matrix4().makeBasis(right, up, normal);
-      const euler = new THREE.Euler().setFromRotationMatrix(rotMatrix, 'YXZ');
-
+      const { right, up, euler } = calculateSurfaceOrientation(normal);
       const rot3D: [number, number, number] = [euler.x, euler.y, euler.z];
 
       const curW = draftSponsorRef.current?.widthCm || 35;
@@ -686,11 +605,12 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const scaleFactor = 0.028;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
-      const size = new THREE.Vector3(w, h, 0.25);
+      const size = new THREE.Vector3(w, h, 0.08);
 
       const beforeExistingCount = existingGroup.children.length;
+      const nearbyMeshes = getNearbyPaintMeshes(paintMeshesRef.current, pos, 0.35);
 
-      paintMeshesRef.current.forEach((mesh) => {
+      nearbyMeshes.forEach((mesh) => {
         if (isMeshForbidden(mesh)) return;
 
         try {

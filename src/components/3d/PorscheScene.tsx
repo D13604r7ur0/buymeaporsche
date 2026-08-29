@@ -7,67 +7,11 @@ import type { CameraPresetName } from '../../context/SponsorContext';
 import { loadRealPorscheModel } from './RealPorscheLoader';
 import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
+import { isMeshForbidden, getNearbyPaintMeshes } from './decalHelpers';
 import type { Sponsor } from '../../types/sponsor';
 import { RotateCw, ZoomIn, ZoomOut, Loader2, MousePointerClick, Plus } from 'lucide-react';
 
-const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
-  const n = mesh.name.toLowerCase();
-  const m = (Array.isArray(mesh.material) ? mesh.material[0]?.name : mesh.material?.name)?.toLowerCase() || '';
-  return (
-    n.includes('glass') ||
-    n.includes('window') ||
-    n.includes('windshield') ||
-    n.includes('windscreen') ||
-    n.includes('cristal') ||
-    n.includes('vidrio') ||
-    n.includes('light') ||
-    n.includes('headlight') ||
-    n.includes('taillight') ||
-    n.includes('lamp') ||
-    n.includes('faro') ||
-    n.includes('calavera') ||
-    n.includes('lens') ||
-    n.includes('reflector') ||
-    n.includes('signal') ||
-    n.includes('turn') ||
-    n.includes('indicator') ||
-    n.includes('led') ||
-    n.includes('fog') ||
-    n.includes('stop') ||
-    n.includes('drl') ||
-    n.includes('optic') ||
-    n.includes('mirror') ||
-    n.includes('wheel') ||
-    n.includes('rim') ||
-    n.includes('tire') ||
-    n.includes('tyre') ||
-    n.includes('brake') ||
-    n.includes('caliper') ||
-    n.includes('disc') ||
-    n.includes('rotor') ||
-    n.includes('hub') ||
-    n.includes('rueda') ||
-    n.includes('llanta') ||
-    n.includes('rin') ||
-    n.includes('freno') ||
-    n.includes('interior') ||
-    n.includes('seat') ||
-    n.includes('steering') ||
-    n.includes('chassis') ||
-    n.includes('exhaust') ||
-    m.includes('glass') ||
-    m.includes('window') ||
-    m.includes('lights') ||
-    m.includes('light') ||
-    m.includes('lamp') ||
-    m.includes('lens') ||
-    m.includes('wheel') ||
-    m.includes('rim') ||
-    m.includes('tire') ||
-    m.includes('tyre') ||
-    m.includes('brake')
-  );
-};
+
 
 export const PorscheScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -442,11 +386,12 @@ export const PorscheScene: React.FC = () => {
       const scaleFactor = 0.028;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
-      const size = new THREE.Vector3(w, h, 0.25);
+      const size = new THREE.Vector3(w, h, 0.08);
 
       const beforeCount = decalsGroup.children.length;
+      const nearbyMeshes = getNearbyPaintMeshes(validPaintMeshes, pos, 0.35);
 
-      validPaintMeshes.forEach((mesh) => {
+      nearbyMeshes.forEach((mesh) => {
         try {
           const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
           if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
@@ -510,11 +455,12 @@ export const PorscheScene: React.FC = () => {
         const dEuler = new THREE.Euler(...(draftSponsor.rotation3D || [-1.22, 0, 0]), 'YXZ');
         const dw = Math.max(0.2, (draftSponsor.widthCm || 35) * 0.028);
         const dh = Math.max(0.15, (draftSponsor.heightCm || 20) * 0.028);
-        const dSize = new THREE.Vector3(dw, dh, 0.25);
+        const dSize = new THREE.Vector3(dw, dh, 0.08);
 
         const beforeDraftCount = draftGroup.children.length;
+        const nearbyDraftMeshes = getNearbyPaintMeshes(validPaintMeshes, dPos, 0.35);
 
-        validPaintMeshes.forEach((mesh) => {
+        nearbyDraftMeshes.forEach((mesh) => {
           try {
             const dGeo = new DecalGeometry(mesh, dPos, dEuler, dSize);
             if (dGeo.attributes.position && dGeo.attributes.position.count > 0) {
