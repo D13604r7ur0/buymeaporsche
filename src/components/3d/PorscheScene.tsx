@@ -739,10 +739,10 @@ export const PorscheScene: React.FC = () => {
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 max-w-[96vw] w-full sm:w-auto">
         
         {/* Row 1: Primary Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsPlacementMode(true)}
-            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-full text-xs font-medium border border-white/15 backdrop-blur-md shadow-lg transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-full text-xs font-mono font-medium border border-white/15 backdrop-blur-xl shadow-xl transition cursor-pointer"
           >
             <MousePointerClick className="w-3.5 h-3.5 text-sky-400" />
             <span className="hidden sm:inline">Colocar en 3D</span>
@@ -751,19 +751,19 @@ export const PorscheScene: React.FC = () => {
 
           <button
             onClick={() => setIsBuyModalOpen(true)}
-            className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg shadow-sky-500/25 transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-[#D5001C] hover:bg-[#b00017] text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl shadow-red-950/40 transition cursor-pointer uppercase tracking-wider"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             <span>Comprar Espacio · Personalizar Logo</span>
           </button>
         </div>
 
         {/* Row 2: Camera Presets & 360 View */}
-        <div className="flex items-center gap-1 bg-neutral-900/90 backdrop-blur-xl px-2 py-1.5 rounded-full border border-white/15 shadow-2xl max-w-full overflow-x-auto text-white">
+        <div className="flex items-center gap-1.5 bg-[#0c0e15]/95 backdrop-blur-2xl px-2.5 py-1.5 rounded-full border border-white/15 shadow-2xl max-w-full overflow-x-auto text-white">
           <button
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              autoRotate ? 'bg-sky-500 text-white font-bold' : 'text-neutral-300 hover:text-white'
+            className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-mono transition cursor-pointer shrink-0 ${
+              autoRotate ? 'bg-[#D5001C] text-white font-bold' : 'text-neutral-300 hover:text-white'
             }`}
           >
             <RotateCw className={`w-3 h-3 ${autoRotate ? 'animate-spin' : ''}`} />
@@ -774,8 +774,8 @@ export const PorscheScene: React.FC = () => {
 
           <button
             onClick={() => setCameraPreset('overview')}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'overview' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
+            className={`px-3 py-1 rounded-full text-[11px] font-mono transition cursor-pointer shrink-0 ${
+              cameraPreset === 'overview' ? 'bg-white text-neutral-950 font-bold shadow-sm' : 'text-neutral-300 hover:text-white'
             }`}
           >
             General
@@ -783,8 +783,8 @@ export const PorscheScene: React.FC = () => {
 
           <button
             onClick={() => setCameraPreset('hood')}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'hood' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
+            className={`px-3 py-1 rounded-full text-[11px] font-mono transition cursor-pointer shrink-0 ${
+              cameraPreset === 'hood' ? 'bg-white text-neutral-950 font-bold shadow-sm' : 'text-neutral-300 hover:text-white'
             }`}
           >
             Cofre
@@ -792,8 +792,8 @@ export const PorscheScene: React.FC = () => {
 
           <button
             onClick={() => setCameraPreset('door_right')}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'door_right' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
+            className={`px-3 py-1 rounded-full text-[11px] font-mono transition cursor-pointer shrink-0 ${
+              cameraPreset === 'door_right' ? 'bg-white text-neutral-950 font-bold shadow-sm' : 'text-neutral-300 hover:text-white'
             }`}
           >
             Lateral
@@ -801,8 +801,8 @@ export const PorscheScene: React.FC = () => {
 
           <button
             onClick={() => setCameraPreset('wing')}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer shrink-0 ${
-              cameraPreset === 'wing' ? 'bg-white/20 text-white font-bold' : 'text-neutral-300 hover:text-white'
+            className={`px-3 py-1 rounded-full text-[11px] font-mono transition cursor-pointer shrink-0 ${
+              cameraPreset === 'wing' ? 'bg-white text-neutral-950 font-bold shadow-sm' : 'text-neutral-300 hover:text-white'
             }`}
           >
             Trasera

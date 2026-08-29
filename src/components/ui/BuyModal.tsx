@@ -992,7 +992,7 @@ export const BuyModal: React.FC = () => {
                 type="button"
                 disabled={isProcessing}
                 onClick={handleDirectSave}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                className="w-full bg-[#D5001C] hover:bg-[#b00017] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-xl shadow-red-950/30 disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>

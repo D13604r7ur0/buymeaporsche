@@ -19,7 +19,6 @@ const MainApp: React.FC = () => {
     goalProgressPercentage,
     contractYears,
     remainingAreaCm2,
-    totalAvailableCm2,
   } = useSponsors();
 
   const scrollToSection = (id: string) => {
@@ -39,22 +38,22 @@ const MainApp: React.FC = () => {
       />
 
       {/* 1. HERO SECTION: 100VH FULLSCREEN 3D PORSCHE (FIRST THING YOU SEE) */}
-      <section className="relative w-full h-screen bg-[#f8f9fa] overflow-hidden">
+      <section className="relative w-full h-screen bg-[#0a0d14] overflow-hidden">
         
         {/* Fullscreen 3D Canvas with Unified Controls */}
         <PorscheScene />
 
-        {/* Floating Top-Center Goal Badge */}
-        <div className="absolute top-20 sm:top-22 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none w-full max-w-lg px-4 text-center">
-          <div className="inline-flex items-center gap-2.5 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-black/[0.08] shadow-sm pointer-events-auto">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-mono font-medium text-neutral-800">
+        {/* Floating Top-Center Goal Badge (Porsche Minimalist High Contrast) */}
+        <div className="absolute top-20 sm:top-22 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none w-full max-w-xl px-4 text-center">
+          <div className="inline-flex items-center gap-2.5 bg-[#0c0e15]/90 backdrop-blur-2xl px-5 py-2.5 rounded-full border border-white/15 shadow-2xl pointer-events-auto">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-mono font-bold text-white tracking-wide">
               ${totalRaisedMxn.toLocaleString()} de ${goalMxn.toLocaleString()} MXN
             </span>
-            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-              {remainingAreaCm2.toLocaleString()} cm² libres de {totalAvailableCm2.toLocaleString()} cm²
+            <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/80 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-semibold">
+              {remainingAreaCm2.toLocaleString()} cm² libres
             </span>
-            <span className="text-[10px] font-mono text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-mono text-neutral-300 bg-white/10 border border-white/10 px-2 py-0.5 rounded-full">
               {goalProgressPercentage}% · {contractYears} Años
             </span>
           </div>
@@ -63,10 +62,10 @@ const MainApp: React.FC = () => {
         {/* Floating Discrete Scroll-to-Content Trigger */}
         <button
           onClick={() => scrollToSection('sponsors')}
-          className="hidden md:flex absolute bottom-8 right-8 z-20 items-center gap-1.5 bg-white/80 hover:bg-white text-neutral-600 hover:text-neutral-900 px-3.5 py-1.5 rounded-full border border-black/10 shadow-sm text-xs font-mono transition cursor-pointer backdrop-blur-md"
+          className="hidden md:flex absolute bottom-8 right-8 z-20 items-center gap-1.5 bg-[#0c0e15]/90 hover:bg-white text-neutral-300 hover:text-neutral-950 px-4 py-2 rounded-full border border-white/15 shadow-2xl text-xs font-mono font-medium transition cursor-pointer backdrop-blur-xl group"
         >
           <span>Patrocinadores</span>
-          <ChevronDown className="w-3.5 h-3.5" />
+          <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
         </button>
 
       </section>

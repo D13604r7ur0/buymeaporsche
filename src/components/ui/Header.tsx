@@ -26,49 +26,50 @@ export const Header: React.FC<HeaderProps> = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 z-40 w-full bg-white/75 backdrop-blur-xl border-b border-black/[0.05]">
+    <header className="fixed top-0 left-0 z-40 w-full bg-[#0b0d14]/85 backdrop-blur-2xl border-b border-white/10 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Brand */}
+        {/* Brand (Porsche Minimalist Badge) */}
         <div 
-          className="flex items-center gap-3 cursor-pointer" 
+          className="flex items-center gap-3 cursor-pointer group" 
           onClick={() => scrollTo('top')}
         >
-          <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white text-xs shadow-sm font-heading font-bold">
+          <div className="w-8 h-8 rounded-full bg-white text-neutral-950 flex items-center justify-center text-xs font-heading font-black tracking-tighter shadow-md group-hover:bg-[#D5001C] group-hover:text-white transition">
             911
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-heading font-bold text-sm tracking-wider uppercase text-neutral-900">
-                Porsche 911 (992)
+              <span className="font-heading font-bold text-xs sm:text-sm tracking-widest uppercase text-white">
+                PORSCHE 911 (992)
               </span>
-              <span className="text-[10px] font-mono text-neutral-500 bg-black/[0.04] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-mono text-neutral-300 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full font-medium">
                 2 Años
               </span>
             </div>
           </div>
         </div>
 
-        {/* Minimal Navigation */}
-        <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-neutral-600">
+        {/* Minimal High-Contrast Navigation */}
+        <nav className="hidden md:flex items-center gap-8 text-xs font-mono tracking-wider uppercase">
           <button
             onClick={() => scrollTo('top')}
-            className="hover:text-neutral-900 transition cursor-pointer"
+            className="text-neutral-300 hover:text-white font-medium transition cursor-pointer flex items-center gap-1.5"
           >
-            Showroom 3D
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            <span>Showroom 3D</span>
           </button>
 
           <button
             onClick={() => scrollTo('sponsors')}
-            className="hover:text-neutral-900 transition cursor-pointer flex items-center gap-1"
+            className="text-neutral-300 hover:text-white font-medium transition cursor-pointer flex items-center gap-1.5"
           >
-            <span>Ranking</span>
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>Ranking</span>
           </button>
 
           <button
             onClick={() => scrollTo('events')}
-            className="hover:text-neutral-900 transition cursor-pointer"
+            className="text-neutral-300 hover:text-white font-medium transition cursor-pointer"
           >
             Exposición
           </button>
@@ -83,18 +84,19 @@ export const Header: React.FC<HeaderProps> = () => {
               setIsMuted(muted);
               if (!muted) sounds.playClickSound();
             }}
-            className="p-2 rounded-full bg-black/[0.04] hover:bg-black/[0.08] text-neutral-700 hover:text-neutral-900 border border-black/[0.06] transition text-xs font-medium flex items-center justify-center cursor-pointer"
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-neutral-200 hover:text-white border border-white/15 transition text-xs font-medium flex items-center justify-center cursor-pointer"
             title={isMuted ? 'Activar sonido' : 'Silenciar sonido'}
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
+          {/* Porsche Guards Red Primary CTA */}
           <button
             onClick={() => {
               sounds.playClickSound();
               setIsBuyModalOpen(true);
             }}
-            className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-3.5 sm:px-4 py-2 rounded-full transition shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
+            className="bg-[#D5001C] hover:bg-[#b00017] text-white font-bold text-xs px-4 sm:px-5 py-2 rounded-full transition shadow-lg shadow-red-900/30 flex items-center gap-1.5 cursor-pointer shrink-0 uppercase tracking-wider"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Comprar Espacio</span>
