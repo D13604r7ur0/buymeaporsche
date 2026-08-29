@@ -386,10 +386,10 @@ export const PorscheScene: React.FC = () => {
       const scaleFactor = 0.028;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
-      const size = new THREE.Vector3(w, h, 0.08);
+      const size = new THREE.Vector3(w, h, 0.22);
 
       const beforeCount = decalsGroup.children.length;
-      const nearbyMeshes = getNearbyPaintMeshes(validPaintMeshes, pos, 0.35);
+      const nearbyMeshes = getNearbyPaintMeshes(validPaintMeshes, pos, 0.45);
 
       nearbyMeshes.forEach((mesh) => {
         try {
@@ -455,10 +455,10 @@ export const PorscheScene: React.FC = () => {
         const dEuler = new THREE.Euler(...(draftSponsor.rotation3D || [-1.22, 0, 0]), 'YXZ');
         const dw = Math.max(0.2, (draftSponsor.widthCm || 35) * 0.028);
         const dh = Math.max(0.15, (draftSponsor.heightCm || 20) * 0.028);
-        const dSize = new THREE.Vector3(dw, dh, 0.08);
+        const dSize = new THREE.Vector3(dw, dh, 0.22);
 
         const beforeDraftCount = draftGroup.children.length;
-        const nearbyDraftMeshes = getNearbyPaintMeshes(validPaintMeshes, dPos, 0.35);
+        const nearbyDraftMeshes = getNearbyPaintMeshes(validPaintMeshes, dPos, 0.45);
 
         nearbyDraftMeshes.forEach((mesh) => {
           try {

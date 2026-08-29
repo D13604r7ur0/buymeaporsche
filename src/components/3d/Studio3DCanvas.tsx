@@ -156,9 +156,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
 
     const position = new THREE.Vector3(...pos);
+    const nearby = getNearbyPaintMeshes(paintMeshesRef.current, position, 0.45);
     const meshesToProject = targetMesh 
-      ? [targetMesh].filter((m) => !isMeshForbidden(m))
-      : getNearbyPaintMeshes(paintMeshesRef.current, position, 0.35);
+      ? [targetMesh, ...nearby.filter((m) => m !== targetMesh)]
+      : nearby;
 
     if (meshesToProject.length === 0) return;
 
@@ -192,7 +193,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
-    const d = 0.08;
+    const d = 0.22;
 
     const size = new THREE.Vector3(w, h, d);
 
@@ -249,8 +250,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       }
       normal.normalize();
 
-      // Lift decal slightly off the surface to eliminate z-fighting
-      const offsetPoint = point.clone().add(normal.clone().multiplyScalar(0.012));
+      // Directly place onto contact surface point
+      const offsetPoint = point.clone().add(normal.clone().multiplyScalar(0.003));
 
       // Calculate stable, upright coordinate basis for decal surface
       const { right, up, euler } = calculateSurfaceOrientation(normal);
@@ -260,40 +261,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const curH = draftSponsorRef.current?.heightCm || 20;
       const curAngle = draftSponsorRef.current?.rotationAngle || rotationAngle || 0;
 
-      // Automatic Seamless Non-Overlapping Resolver:
-      // Prevents decals from intersecting by cleanly relaxing/sliding to the closest free surface!
-      const curScale = 0.028;
-      const draftRadius = Math.sqrt(Math.pow((curW * curScale) / 2, 2) + Math.pow((curH * curScale) / 2, 2));
-
-      let adjustedOffsetPoint = offsetPoint.clone();
-
-      if (existingSponsors && existingSponsors.length > 0) {
-        for (let pass = 0; pass < 3; pass++) {
-          for (const sp of existingSponsors) {
-            if (!sp.position3D) continue;
-            const spPos = new THREE.Vector3(...sp.position3D);
-            const spW = sp.widthCm || 35;
-            const spH = sp.heightCm || 20;
-            const spRadius = Math.sqrt(Math.pow((spW * curScale) / 2, 2) + Math.pow((spH * curScale) / 2, 2));
-
-            const minAllowedDist = (draftRadius + spRadius) * 0.94;
-            const currentDist = adjustedOffsetPoint.distanceTo(spPos);
-
-            if (currentDist < minAllowedDist && currentDist > 0.001) {
-              const pushDir = new THREE.Vector3().subVectors(adjustedOffsetPoint, spPos).normalize();
-              const pushMag = minAllowedDist - currentDist + 0.025;
-              adjustedOffsetPoint.addScaledVector(pushDir, pushMag);
-            } else if (currentDist <= 0.001) {
-              adjustedOffsetPoint.addScaledVector(right, draftRadius + spRadius + 0.05);
-            }
-          }
-        }
-      }
-
       const pos3D: [number, number, number] = [
-        Number(adjustedOffsetPoint.x.toFixed(3)),
-        Number(adjustedOffsetPoint.y.toFixed(3)),
-        Number(adjustedOffsetPoint.z.toFixed(3))
+        Number(offsetPoint.x.toFixed(3)),
+        Number(offsetPoint.y.toFixed(3)),
+        Number(offsetPoint.z.toFixed(3))
       ];
 
       // Multi-zone proportional calculation: if the sticker spans across 2 or more panels,
@@ -592,10 +563,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const scaleFactor = 0.028;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
-      const size = new THREE.Vector3(w, h, 0.08);
+      const size = new THREE.Vector3(w, h, 0.22);
 
       const beforeExistingCount = existingGroup.children.length;
-      const nearbyMeshes = getNearbyPaintMeshes(paintMeshesRef.current, pos, 0.35);
+      const nearbyMeshes = getNearbyPaintMeshes(paintMeshesRef.current, pos, 0.45);
 
       nearbyMeshes.forEach((mesh) => {
         if (isMeshForbidden(mesh)) return;
