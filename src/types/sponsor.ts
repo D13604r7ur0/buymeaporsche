@@ -19,7 +19,7 @@ export interface Sponsor {
   logoUrl: string;
   targetUrl: string;
   email: string;
-  category: SponsorCategory;
+  category?: SponsorCategory;
   tier: SponsorTier;
   
   // Dimensions & Pricing

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { Sponsor, ZoneConfig } from '../types/sponsor';
-import { INITIAL_SPONSORS, CAMPAIGN_GOAL_MXN, CONTRACT_YEARS, CONTRACT_DAYS, TOTAL_AVAILABLE_CM2, ZONES } from '../utils/sampleData';
+import { INITIAL_SPONSORS, SOLD_OUT_SPONSORS, CAMPAIGN_GOAL_MXN, CONTRACT_YEARS, CONTRACT_DAYS, TOTAL_AVAILABLE_CM2, ZONES } from '../utils/sampleData';
 import confetti from 'canvas-confetti';
 
 
@@ -65,10 +65,12 @@ interface SponsorContextType {
   setSelectedTierFilter: (tier: string) => void;
   filteredSponsors: Sponsor[];
   
-  // Actions
+  // Actions & Demo Test
   addSponsor: (newSponsorData: Omit<Sponsor, 'id' | 'createdAt' | 'expiryDate' | 'viewsCount' | 'clicksCount' | 'certificateId'>) => Sponsor;
   recordClick: (sponsorId: string) => void;
   recordView: (sponsorId: string) => void;
+  loadSoldOutDemo: () => void;
+  resetToEmpty: () => void;
   
   // Stats
   totalRaisedMxn: number;
@@ -88,7 +90,7 @@ interface SponsorContextType {
   setCertificateSponsor: (sponsor: Sponsor | null) => void;
 }
 
-const STORAGE_KEY = 'buymeaporsche_production_sponsors_v3';
+const STORAGE_KEY = 'buymeaporsche_production_sponsors_v5';
 
 const SponsorContext = createContext<SponsorContextType | undefined>(undefined);
 
@@ -97,7 +99,10 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.warn('Failed to read sponsors from localStorage', e);
@@ -273,6 +278,17 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
   };
 
+  const loadSoldOutDemo = () => {
+    setSponsors(SOLD_OUT_SPONSORS);
+    triggerCelebration();
+  };
+
+  const resetToEmpty = () => {
+    setSponsors([]);
+    setSelectedSponsor(null);
+    setFocusedSponsorId(null);
+  };
+
   return (
     <SponsorContext.Provider
       value={{
@@ -303,6 +319,8 @@ export const SponsorProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addSponsor,
         recordClick,
         recordView,
+        loadSoldOutDemo,
+        resetToEmpty,
         totalRaisedMxn,
         goalProgressPercentage,
         totalAreaSoldCm2,

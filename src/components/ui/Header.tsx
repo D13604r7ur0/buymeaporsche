@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
 import { sounds } from '../../utils/soundEffects';
-import { Plus, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Volume2, VolumeX, Sparkles, RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: '3d' | 'roi' | 'events' | 'directory';
@@ -11,6 +11,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = () => {
   const {
+    sponsors,
+    loadSoldOutDemo,
+    resetToEmpty,
     setIsBuyModalOpen,
   } = useSponsors();
 
@@ -24,6 +27,8 @@ export const Header: React.FC<HeaderProps> = () => {
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  const isSoldOut = sponsors.length >= 30;
 
   return (
     <header className="fixed top-0 left-0 z-40 w-full bg-[#0b0d14]/90 backdrop-blur-2xl border-b border-white/10 text-white">
@@ -78,6 +83,38 @@ export const Header: React.FC<HeaderProps> = () => {
         {/* Right CTA Actions */}
         <div className="flex items-center gap-2.5">
           
+          {/* Test 100% Sold Out Simulation Button */}
+          <button
+            onClick={() => {
+              sounds.playClickSound();
+              if (isSoldOut) {
+                resetToEmpty();
+              } else {
+                loadSoldOutDemo();
+              }
+            }}
+            className={`px-3 py-1.5 rounded-full text-xs font-mono border transition flex items-center gap-1.5 cursor-pointer backdrop-blur-md shadow-xs ${
+              isSoldOut
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50 hover:bg-emerald-500/30 font-bold'
+                : 'bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white border-white/15'
+            }`}
+            title="Alternar prueba de Porsche 100% vendido"
+          >
+            {isSoldOut ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">100% Vendido (Demo)</span>
+                <span className="sm:hidden">100%</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Probar 100% Vendido</span>
+                <span className="sm:hidden">Demo</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => {
               const muted = sounds.toggleMute();
