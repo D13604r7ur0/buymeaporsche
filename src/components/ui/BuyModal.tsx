@@ -10,7 +10,6 @@ import {
   X, 
   Upload, 
   CheckCircle2, 
-  Eye, 
   Lock, 
   Unlock,
   Move,
@@ -417,29 +416,6 @@ export const BuyModal: React.FC = () => {
                 <p className="text-xs text-neutral-500 font-sans mt-0.5 mb-3">
                   Arrastra tu logo directamente sobre la carrocería del Porsche 3D.
                 </p>
-
-                {/* 3D Mode Toggle Button */}
-                <button
-                  type="button"
-                  onClick={() => setInteractMode(interactMode === 'moveLogo' ? 'orbitCamera' : 'moveLogo')}
-                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-2 border shadow-xs ${
-                    interactMode === 'moveLogo'
-                      ? 'bg-sky-50 text-sky-700 border-sky-300 font-bold hover:bg-sky-100'
-                      : 'bg-amber-50 text-amber-800 border-amber-300 font-bold hover:bg-amber-100'
-                  }`}
-                >
-                  {interactMode === 'moveLogo' ? (
-                    <>
-                      <Move className="w-3.5 h-3.5 text-sky-600" />
-                      <span>✋ Modo: Mover Logo · (Clic para Girar Auto)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5 text-amber-600" />
-                      <span>👁️ Modo: Girar Auto · (Clic para Mover Logo)</span>
-                    </>
-                  )}
-                </button>
               </div>
 
               {/* Logo Uploader Dropzone */}

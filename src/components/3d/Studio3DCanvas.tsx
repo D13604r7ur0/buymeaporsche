@@ -9,7 +9,7 @@ import { createSponsorTexture } from './SponsorDecalTexture';
 import { calculateSurfaceOrientation, isMeshForbidden, getNearbyPaintMeshes } from './decalHelpers';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
-import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw, Play, Pause } from 'lucide-react';
+import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Plus, Minus, RefreshCw, Play, Pause } from 'lucide-react';
 
 
 
@@ -40,21 +40,14 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   existingSponsors,
   cameraViewTrigger,
   interactMode: externalInteractMode,
-  onToggleInteractMode,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central Frontal');
-  const [internalMode, setInternalMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
+  const [internalMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
   const [isAutoRotating, setIsAutoRotating] = useState<boolean>(false);
 
   const interactMode = externalInteractMode || internalMode;
-  const setInteractMode = (mode: 'moveLogo' | 'orbitCamera') => {
-    setInternalMode(mode);
-    if (onToggleInteractMode) {
-      onToggleInteractMode(mode);
-    }
-  };
 
   // Ref to avoid stale closures during high-frequency drag events
   const draftSponsorRef = useRef<Partial<Sponsor>>({ ...draftSponsor, rotationAngle });
@@ -695,35 +688,21 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Floating Top Mode Selector: Orbit Camera vs Drag Logo */}
+      {/* Floating Top Controls: Zone Badge & Auto-Rotate Toggle */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         
-        {/* Unified Single Mode Toggle Button */}
-        <button
-          type="button"
-          onClick={() => setInteractMode(interactMode === 'moveLogo' ? 'orbitCamera' : 'moveLogo')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-mono transition cursor-pointer flex items-center gap-2.5 border shadow-2xl backdrop-blur-md pointer-events-auto ${
-            interactMode === 'moveLogo'
-              ? 'bg-sky-500 hover:bg-sky-400 text-white border-sky-400 font-bold'
-              : 'bg-neutral-900/95 hover:bg-neutral-800 text-amber-300 border-amber-400/40 font-bold'
-          }`}
-          title="Haz clic para alternar entre mover el logo o girar la vista 3D"
-        >
-          {interactMode === 'moveLogo' ? (
-            <>
-              <Move className="w-4 h-4" />
-              <span>✋ Modo: Mover Logo <span className="opacity-75 font-normal text-[11px]">(Clic para Girar Auto)</span></span>
-            </>
-          ) : (
-            <>
-              <Eye className="w-4 h-4 text-amber-400" />
-              <span>👁️ Modo: Girar Auto <span className="opacity-75 font-normal text-[11px]">(Clic para Mover Logo)</span></span>
-            </>
+        {/* Live Detected Zone Badge */}
+        <div className="pointer-events-auto">
+          {activeZoneName && (
+            <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2">
+              <Compass className="w-3.5 h-3.5 text-sky-400" />
+              <span>{activeZoneName}</span>
+            </div>
           )}
-        </button>
+        </div>
 
-        {/* Live Detected Zone Badge & Auto-Rotate Toggle */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        {/* Auto-Rotate Toggle */}
+        <div className="pointer-events-auto">
           <button
             type="button"
             onClick={() => setIsAutoRotating(!isAutoRotating)}
@@ -737,13 +716,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             {isAutoRotating ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">Auto-Giro 360°</span>
           </button>
-
-          {activeZoneName && (
-            <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2">
-              <Compass className="w-3.5 h-3.5 text-sky-400" />
-              <span>{activeZoneName}</span>
-            </div>
-          )}
         </div>
       </div>
 
