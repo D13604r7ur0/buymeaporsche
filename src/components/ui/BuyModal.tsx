@@ -5,6 +5,7 @@ import type { SponsorTier } from '../../types/sponsor';
 import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
+import { PorscheCrest } from './PorscheCrest';
 import { 
   X, 
   Upload, 
@@ -324,15 +325,15 @@ export const BuyModal: React.FC = () => {
       {/* Top Studio Bar */}
       <header className="h-14 border-b border-white/10 bg-neutral-950 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white text-xs">
-            🏎️
+          <div className="flex items-center justify-center">
+            <PorscheCrest className="w-5 h-7 shrink-0 drop-shadow-sm" />
           </div>
           <div>
-            <h1 className="text-white text-xs sm:text-sm font-heading font-bold tracking-wide">
-              Estudio 3D Oficial · Venta por cm²
+            <h1 className="text-white text-xs sm:text-sm font-heading font-black tracking-wider uppercase">
+              Cómprame un Porsche · Estudio 3D Oficial
             </h1>
             <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">
-              Diseña sobre la chapa real del Porsche 911 con ajuste seamless sin traslapes
+              Diseña sobre la chapa real del Porsche 911 (992) con ajuste seamless sin traslapes
             </span>
           </div>
         </div>
