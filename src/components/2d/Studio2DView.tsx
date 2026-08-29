@@ -102,20 +102,20 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
 
       samplePts.forEach(({ x, y, w }) => {
         let name = 'Cofre Central Frontal';
-        let price = 35;
+        let price = 45;
         let tier: SponsorTier = 'hood_central';
 
         if (y < 32) {
           name = 'Tapa de Motor Trasera';
-          price = 40;
+          price = 50;
           tier = 'rear_decklid';
         } else if (y < 58) {
           name = 'Techo Panorámico';
-          price = 25;
+          price = 30;
           tier = 'body_standard';
         } else if (Math.abs(x - 50) > 28) {
           name = 'Salpicaderas Delanteras';
-          price = 20;
+          price = 25;
           tier = 'body_standard';
         }
 
@@ -132,16 +132,16 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
 
       samplePts.forEach(({ x, w }) => {
         let name = isLeft ? 'Puerta Izquierda' : 'Puerta Derecha';
-        let price = 25;
+        let price = 35;
         let tier: SponsorTier = 'premium_door';
 
         if (x < 28) {
           name = 'Salpicadera Frontal';
-          price = 20;
+          price = 25;
           tier = 'body_standard';
         } else if (x > 72) {
           name = 'Costado Trasero';
-          price = 20;
+          price = 25;
           tier = 'body_standard';
         }
 
@@ -156,12 +156,12 @@ export const Studio2DView: React.FC<Studio2DViewProps> = ({
 
       samplePts.forEach(({ y, w }) => {
         let name = 'Defensa Trasera';
-        let price = 15;
+        let price = 25;
         let tier: SponsorTier = 'body_standard';
 
-        if (y < 45) {
-          name = 'Tapa de Motor Trasera';
-          price = 40;
+        if (y < 35) {
+          name = 'Alerón / Tapa Trasera';
+          price = 50;
           tier = 'rear_decklid';
         }
 

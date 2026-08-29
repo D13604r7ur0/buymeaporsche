@@ -78,7 +78,8 @@ export const BuyModal: React.FC = () => {
   const [currentRotation3D, setCurrentRotation3D] = useState<[number, number, number]>(
     draftSponsor?.rotation3D || [-1.25, 0, 0]
   );
-  const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');  const [pricePerCm2, setPricePerCm2] = useState<number>(35);
+  const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');
+  const [pricePerCm2, setPricePerCm2] = useState<number>(draftSponsor?.pricePerCm2 || 45);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);

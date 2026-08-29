@@ -408,14 +408,14 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       ];
 
       const classify = (p: THREE.Vector3) => {
-        if (p.z < -1.02 && p.y > 0.72) return { name: 'Tapa de Motor Trasera', price: 40, tier: 'rear_decklid' as SponsorTier };
-        if (p.z > 0.65 && p.y > 0.60 && Math.abs(p.x) < 0.62) return { name: 'Cofre Central Frontal', price: 35, tier: 'hood_central' as SponsorTier };
-        if (p.x < -0.55 && p.y < 1.18 && p.z >= -1.02 && p.z <= 0.65) return { name: 'Puerta Izquierda', price: 25, tier: 'premium_door' as SponsorTier };
-        if (p.x > 0.55 && p.y < 1.18 && p.z >= -1.02 && p.z <= 0.65) return { name: 'Puerta Derecha', price: 25, tier: 'premium_door' as SponsorTier };
-        if (p.y > 1.20 && Math.abs(p.x) < 0.55 && p.z >= -0.75 && p.z <= 0.45) return { name: 'Techo Panorámico', price: 25, tier: 'body_standard' as SponsorTier };
-        if (p.z < -1.40 && p.y <= 0.72) return { name: 'Defensa Trasera', price: 15, tier: 'body_standard' as SponsorTier };
-        if (p.z > 1.40 && p.y <= 0.60) return { name: 'Defensa Delantera', price: 15, tier: 'body_standard' as SponsorTier };
-        return { name: 'Salpicaderas & Costados', price: 20, tier: 'body_standard' as SponsorTier };
+        if (p.z < -1.02 && p.y > 0.72) return { name: 'Tapa de Motor Trasera', price: 50, tier: 'rear_decklid' as SponsorTier };
+        if (p.z > 0.65 && p.y > 0.60 && Math.abs(p.x) < 0.62) return { name: 'Cofre Central Frontal', price: 45, tier: 'hood_central' as SponsorTier };
+        if (p.x < -0.55 && p.y < 1.18 && p.z >= -1.02 && p.z <= 0.65) return { name: 'Puerta Izquierda', price: 35, tier: 'premium_door' as SponsorTier };
+        if (p.x > 0.55 && p.y < 1.18 && p.z >= -1.02 && p.z <= 0.65) return { name: 'Puerta Derecha', price: 35, tier: 'premium_door' as SponsorTier };
+        if (p.y > 1.20 && Math.abs(p.x) < 0.55 && p.z >= -0.75 && p.z <= 0.45) return { name: 'Techo Panorámico', price: 30, tier: 'body_standard' as SponsorTier };
+        if (p.z < -1.40 && p.y <= 0.72) return { name: 'Defensa Trasera', price: 25, tier: 'body_standard' as SponsorTier };
+        if (p.z > 1.40 && p.y <= 0.60) return { name: 'Defensa Delantera', price: 25, tier: 'body_standard' as SponsorTier };
+        return { name: 'Salpicaderas & Costados', price: 25, tier: 'body_standard' as SponsorTier };
       };
 
       const zoneWeights: Record<string, { w: number; price: number; name: string; tier: SponsorTier }> = {};
@@ -880,7 +880,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
               rotation3D: [0, -Math.PI / 2, 0],
               tier: 'premium_door',
               zoneName: 'Puerta Izquierda',
-              pricePerCm2: 25,
+              pricePerCm2: 35,
             });
             setActiveZoneName('Puerta Izquierda');
           }}
@@ -897,7 +897,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
               rotation3D: [0, Math.PI / 2, 0],
               tier: 'premium_door',
               zoneName: 'Puerta Derecha',
-              pricePerCm2: 25,
+              pricePerCm2: 35,
             });
             setActiveZoneName('Puerta Derecha');
           }}
@@ -914,7 +914,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
               rotation3D: [-Math.PI / 2, 0, 0],
               tier: 'body_standard',
               zoneName: 'Techo Panorámico',
-              pricePerCm2: 25,
+              pricePerCm2: 30,
             });
             setActiveZoneName('Techo Panorámico');
           }}
