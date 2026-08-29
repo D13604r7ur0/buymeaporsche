@@ -40,14 +40,32 @@ const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
     n.includes('wheel') ||
     n.includes('rim') ||
     n.includes('tire') ||
+    n.includes('tyre') ||
+    n.includes('brake') ||
+    n.includes('caliper') ||
+    n.includes('disc') ||
+    n.includes('rotor') ||
+    n.includes('hub') ||
+    n.includes('rueda') ||
+    n.includes('llanta') ||
+    n.includes('rin') ||
+    n.includes('freno') ||
     n.includes('interior') ||
     n.includes('seat') ||
+    n.includes('steering') ||
+    n.includes('chassis') ||
+    n.includes('exhaust') ||
     m.includes('glass') ||
     m.includes('window') ||
     m.includes('lights') ||
     m.includes('light') ||
     m.includes('lamp') ||
-    m.includes('lens')
+    m.includes('lens') ||
+    m.includes('wheel') ||
+    m.includes('rim') ||
+    m.includes('tire') ||
+    m.includes('tyre') ||
+    m.includes('brake')
   );
 };
 
@@ -237,11 +255,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
     const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
     
-    // Scale derived directly from centimeters
+    // Scale derived directly from centimeters with skin-tight surface depth
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
-    const d = 0.45;
+    const d = 0.05; // 5cm skin-tight depth so decal NEVER penetrates into wheels or interior
 
     const size = new THREE.Vector3(w, h, d);
 
@@ -663,7 +681,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const size = new THREE.Vector3(
         (sponsor.widthCm || 35) * scaleFactor,
         (sponsor.heightCm || 20) * scaleFactor,
-        0.45
+        0.05
       );
 
       paintMeshesRef.current.forEach((mesh) => {

@@ -17,6 +17,7 @@ const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
     n.includes('glass') ||
     n.includes('window') ||
     n.includes('windshield') ||
+    n.includes('windscreen') ||
     n.includes('cristal') ||
     n.includes('vidrio') ||
     n.includes('light') ||
@@ -28,17 +29,43 @@ const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
     n.includes('lens') ||
     n.includes('reflector') ||
     n.includes('signal') ||
+    n.includes('turn') ||
+    n.includes('indicator') ||
     n.includes('led') ||
     n.includes('fog') ||
+    n.includes('stop') ||
+    n.includes('drl') ||
+    n.includes('optic') ||
+    n.includes('mirror') ||
     n.includes('wheel') ||
     n.includes('rim') ||
     n.includes('tire') ||
+    n.includes('tyre') ||
+    n.includes('brake') ||
+    n.includes('caliper') ||
+    n.includes('disc') ||
+    n.includes('rotor') ||
+    n.includes('hub') ||
+    n.includes('rueda') ||
+    n.includes('llanta') ||
+    n.includes('rin') ||
+    n.includes('freno') ||
     n.includes('interior') ||
+    n.includes('seat') ||
+    n.includes('steering') ||
+    n.includes('chassis') ||
+    n.includes('exhaust') ||
     m.includes('glass') ||
     m.includes('window') ||
+    m.includes('lights') ||
     m.includes('light') ||
     m.includes('lamp') ||
-    m.includes('lens')
+    m.includes('lens') ||
+    m.includes('wheel') ||
+    m.includes('rim') ||
+    m.includes('tire') ||
+    m.includes('tyre') ||
+    m.includes('brake')
   );
 };
 
@@ -414,7 +441,7 @@ export const PorscheScene: React.FC = () => {
       const size = new THREE.Vector3(
         (sponsor.widthCm || 35) * scaleFactor,
         (sponsor.heightCm || 20) * scaleFactor,
-        0.45
+        0.05
       );
 
       validPaintMeshes.forEach((mesh) => {
@@ -468,7 +495,7 @@ export const PorscheScene: React.FC = () => {
         const dSize = new THREE.Vector3(
           (draftSponsor.widthCm || 35) * 0.028,
           (draftSponsor.heightCm || 20) * 0.028,
-          0.45
+          0.05
         );
 
         validPaintMeshes.forEach((mesh) => {
