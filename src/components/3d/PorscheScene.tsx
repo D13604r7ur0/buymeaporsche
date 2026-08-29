@@ -382,18 +382,23 @@ export const PorscheScene: React.FC = () => {
         baseMatrix.premultiply(rotMatrix);
       }
 
+      // Extract the exact outward normal of the decal plane
+      const outwardNormal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
+      // Push the projection point 10mm outwards to guarantee it is NEVER buried inside the car mesh geometry!
+      const offsetPos = pos.clone().add(outwardNormal.multiplyScalar(0.01));
+
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
       const scaleFactor = 0.028;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
-      const size = new THREE.Vector3(w, h, 0.22);
+      const size = new THREE.Vector3(w, h, 0.40);
 
       const beforeCount = decalsGroup.children.length;
-      const nearbyMeshes = getNearbyPaintMeshes(validPaintMeshes, pos, 0.45);
+      const nearbyMeshes = getNearbyPaintMeshes(validPaintMeshes, offsetPos, 0.50);
 
       nearbyMeshes.forEach((mesh) => {
         try {
-          const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
+          const decalGeo = new DecalGeometry(mesh, offsetPos, finalEuler, size);
           if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
             const decalMesh = new THREE.Mesh(decalGeo, material);
             decalMesh.renderOrder = 100;
@@ -409,7 +414,7 @@ export const PorscheScene: React.FC = () => {
       if (decalsGroup.children.length === beforeCount) {
         const planeGeo = new THREE.PlaneGeometry(w, h);
         const planeMesh = new THREE.Mesh(planeGeo, material);
-        planeMesh.position.copy(pos);
+        planeMesh.position.copy(offsetPos);
         planeMesh.rotation.copy(finalEuler);
         planeMesh.renderOrder = 100;
         planeMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
@@ -453,16 +458,21 @@ export const PorscheScene: React.FC = () => {
 
         const dPos = new THREE.Vector3(...draftSponsor.position3D);
         const dEuler = new THREE.Euler(...(draftSponsor.rotation3D || [-1.22, 0, 0]), 'YXZ');
+        
+        const dBaseMatrix = new THREE.Matrix4().makeRotationFromEuler(dEuler);
+        const dOutwardNormal = new THREE.Vector3(0, 0, 1).applyMatrix4(dBaseMatrix).normalize();
+        const dOffsetPos = dPos.clone().add(dOutwardNormal.multiplyScalar(0.01));
+
         const dw = Math.max(0.2, (draftSponsor.widthCm || 35) * 0.028);
         const dh = Math.max(0.15, (draftSponsor.heightCm || 20) * 0.028);
-        const dSize = new THREE.Vector3(dw, dh, 0.22);
+        const dSize = new THREE.Vector3(dw, dh, 0.40);
 
         const beforeDraftCount = draftGroup.children.length;
-        const nearbyDraftMeshes = getNearbyPaintMeshes(validPaintMeshes, dPos, 0.45);
+        const nearbyDraftMeshes = getNearbyPaintMeshes(validPaintMeshes, dOffsetPos, 0.50);
 
         nearbyDraftMeshes.forEach((mesh) => {
           try {
-            const dGeo = new DecalGeometry(mesh, dPos, dEuler, dSize);
+            const dGeo = new DecalGeometry(mesh, dOffsetPos, dEuler, dSize);
             if (dGeo.attributes.position && dGeo.attributes.position.count > 0) {
               const dMesh = new THREE.Mesh(dGeo, draftMat);
               dMesh.renderOrder = 100;
@@ -476,7 +486,7 @@ export const PorscheScene: React.FC = () => {
         if (draftGroup.children.length === beforeDraftCount) {
           const planeGeo = new THREE.PlaneGeometry(dw, dh);
           const planeMesh = new THREE.Mesh(planeGeo, draftMat);
-          planeMesh.position.copy(dPos);
+          planeMesh.position.copy(dOffsetPos);
           planeMesh.rotation.copy(dEuler);
           planeMesh.renderOrder = 100;
           draftGroup.add(planeMesh);

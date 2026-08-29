@@ -559,20 +559,25 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
         baseMatrix.premultiply(rotMatrix);
       }
 
+      // Extract the exact outward normal of the decal plane
+      const outwardNormal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
+      // Push the projection point 10mm outwards to guarantee it is NEVER buried inside the car mesh geometry!
+      const offsetPos = pos.clone().add(outwardNormal.multiplyScalar(0.01));
+
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
       const scaleFactor = 0.028;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
-      const size = new THREE.Vector3(w, h, 0.22);
+      const size = new THREE.Vector3(w, h, 0.40);
 
       const beforeExistingCount = existingGroup.children.length;
-      const nearbyMeshes = getNearbyPaintMeshes(paintMeshesRef.current, pos, 0.45);
+      const nearbyMeshes = getNearbyPaintMeshes(paintMeshesRef.current, offsetPos, 0.50);
 
       nearbyMeshes.forEach((mesh) => {
         if (isMeshForbidden(mesh)) return;
 
         try {
-          const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
+          const decalGeo = new DecalGeometry(mesh, offsetPos, finalEuler, size);
           if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
             const decalMesh = new THREE.Mesh(decalGeo, mat);
             decalMesh.renderOrder = 100;
@@ -586,7 +591,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       if (existingGroup.children.length === beforeExistingCount) {
         const planeGeo = new THREE.PlaneGeometry(w, h);
         const planeMesh = new THREE.Mesh(planeGeo, mat);
-        planeMesh.position.copy(pos);
+        planeMesh.position.copy(offsetPos);
         planeMesh.rotation.copy(finalEuler);
         planeMesh.renderOrder = 100;
         existingGroup.add(planeMesh);
