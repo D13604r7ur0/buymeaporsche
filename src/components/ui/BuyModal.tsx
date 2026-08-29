@@ -166,7 +166,7 @@ export const BuyModal: React.FC = () => {
           const ratio = (img.width || 400) / (img.height || 400);
           setAspectRatio(ratio);
           if (lockAspectRatio) {
-            const newH = Math.max(5, Math.min(60, Math.round(widthCm / ratio)));
+            const newH = Math.max(1, Math.min(60, Math.round(widthCm / ratio)));
             setHeightCm(newH);
           }
         };
@@ -178,11 +178,11 @@ export const BuyModal: React.FC = () => {
 
   // Change dimensions by setting explicit area in cm²
   const handleSetAreaCm2 = (newArea: number) => {
-    const safeArea = Math.max(25, Math.min(6000, newArea));
+    const safeArea = Math.max(1, Math.min(6000, newArea));
     setTargetAreaCm2(safeArea);
     const ratio = aspectRatio > 0 ? aspectRatio : 1.5;
-    const newW = Math.max(8, Math.min(120, Math.round(Math.sqrt(safeArea * ratio))));
-    const newH = Math.max(5, Math.min(60, Math.round(newW / ratio)));
+    const newW = Math.max(1, Math.min(120, Math.round(Math.sqrt(safeArea * ratio))));
+    const newH = Math.max(1, Math.min(60, Math.round(newW / ratio)));
     setWidthCm(newW);
     setHeightCm(newH);
   };
@@ -504,9 +504,9 @@ export const BuyModal: React.FC = () => {
                   </div>
                   <input
                     type="range"
-                    min={25}
+                    min={1}
                     max={3500}
-                    step={25}
+                    step={1}
                     value={areaCm2}
                     onChange={(e) => handleSetAreaCm2(Number(e.target.value))}
                     className="w-full accent-emerald-600 bg-neutral-200 cursor-pointer h-2 rounded-lg"
@@ -522,14 +522,14 @@ export const BuyModal: React.FC = () => {
                     </div>
                     <input
                       type="range"
-                      min={8}
+                      min={1}
                       max={120}
                       value={widthCm}
                       onChange={(e) => {
                         const w = Number(e.target.value);
                         setWidthCm(w);
                         if (lockAspectRatio && aspectRatio > 0) {
-                          setHeightCm(Math.max(5, Math.min(60, Math.round(w / aspectRatio))));
+                          setHeightCm(Math.max(1, Math.min(60, Math.round(w / aspectRatio))));
                         }
                       }}
                       className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-1.5 rounded-lg"
@@ -543,14 +543,14 @@ export const BuyModal: React.FC = () => {
                     </div>
                     <input
                       type="range"
-                      min={5}
+                      min={1}
                       max={60}
                       value={heightCm}
                       onChange={(e) => {
                         const h = Number(e.target.value);
                         setHeightCm(h);
                         if (lockAspectRatio && aspectRatio > 0) {
-                          setWidthCm(Math.max(8, Math.min(120, Math.round(h * aspectRatio))));
+                          setWidthCm(Math.max(1, Math.min(120, Math.round(h * aspectRatio))));
                         }
                       }}
                       className="w-full accent-neutral-900 bg-neutral-200 cursor-pointer h-1.5 rounded-lg"
