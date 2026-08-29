@@ -5,7 +5,6 @@ import type { SponsorTier } from '../../types/sponsor';
 import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
-import { PorscheCrest } from './PorscheCrest';
 import { 
   X, 
   Upload, 
@@ -326,9 +325,6 @@ export const BuyModal: React.FC = () => {
       {/* Top Studio Bar */}
       <header className="h-14 border-b border-white/10 bg-neutral-950 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center">
-            <PorscheCrest className="w-5 h-7 shrink-0 drop-shadow-sm" />
-          </div>
           <div>
             <h1 className="text-white text-xs sm:text-sm font-heading font-black tracking-wider uppercase">
               Cómprame un Porsche · Estudio 3D Oficial

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useSponsors } from '../../context/SponsorContext';
 import { sounds } from '../../utils/soundEffects';
 import { Plus, Volume2, VolumeX } from 'lucide-react';
-import { PorscheCrest } from './PorscheCrest';
 
 interface HeaderProps {
   activeTab: '3d' | 'roi' | 'events' | 'directory';
@@ -30,17 +29,14 @@ export const Header: React.FC<HeaderProps> = () => {
     <header className="fixed top-0 left-0 z-40 w-full bg-[#0b0d14]/90 backdrop-blur-2xl border-b border-white/10 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Brand: Cómprame un Porsche + Authentic Porsche Crest */}
+        {/* Brand: Cómprame un Porsche */}
         <div 
-          className="flex items-center gap-3 cursor-pointer group" 
+          className="flex items-center gap-2 cursor-pointer group" 
           onClick={() => scrollTo('top')}
         >
-          <div className="flex items-center justify-center p-0.5 group-hover:scale-105 transition-transform">
-            <PorscheCrest className="w-6 h-8 sm:w-7 sm:h-9 shrink-0 drop-shadow-md" />
-          </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-heading font-black text-sm sm:text-base tracking-wider uppercase text-white group-hover:text-yellow-400 transition-colors">
+              <span className="font-heading font-black text-sm sm:text-base tracking-wider uppercase text-white group-hover:text-[#D5001C] transition-colors">
                 Cómprame un Porsche
               </span>
               <span className="text-[10px] font-mono text-neutral-300 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full font-medium">
