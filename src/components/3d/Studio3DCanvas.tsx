@@ -190,7 +190,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
     const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
 
-    const scaleFactor = 0.028;
+    const scaleFactor = 0.010;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
     const d = 0.22;
@@ -269,7 +269,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
       // Multi-zone proportional calculation: if the sticker spans across 2 or more panels,
       // calculate the exact proportional blended rate of each part touched!
-      const scale = 0.028;
+      const scale = 0.010;
       const halfW = (curW * scale) / 2;
       const halfH = (curH * scale) / 2;
 
@@ -565,7 +565,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const offsetPos = pos.clone().add(outwardNormal.multiplyScalar(0.01));
 
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
-      const scaleFactor = 0.028;
+      const scaleFactor = 0.010;
       const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
       const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
       const size = new THREE.Vector3(w, h, 0.40);
