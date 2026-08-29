@@ -123,6 +123,8 @@ export const createSponsorTexture = (
       };
       img.onerror = () => {
         console.warn('Failed to load logo image:', sponsor.logoUrl);
+        // Draw text fallback so the decal isn't blank
+        drawContent();
       };
       img.src = sponsor.logoUrl;
       // Also draw placeholder while loading

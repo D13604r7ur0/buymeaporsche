@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
 import type { SponsorTier } from '../../types/sponsor';
 import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
+import { generateFallbackLogo } from '../../utils/brandLogos';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
 import { TermsModal } from './TermsModal';
@@ -209,7 +210,7 @@ export const BuyModal: React.FC = () => {
       if (dir === 'up') next[1] += stepSize;
       if (dir === 'down') next[1] -= stepSize;
       if (dir === 'left') {
-        if (Math.abs(prev[0]) > 0.5) next[2] += stepSize;
+        if (Math.abs(prev[0]) > 0.5) next[2] -= stepSize;
         else next[0] -= stepSize;
       }
       if (dir === 'right') {
@@ -282,7 +283,7 @@ export const BuyModal: React.FC = () => {
         brandName: name,
         sponsorName: name,
         slogan: slogan.trim() || 'Patrocinador Oficial Porsche 911 (992)',
-        logoUrl: logoPreviewUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
+        logoUrl: logoPreviewUrl || generateFallbackLogo(name),
         targetUrl: targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`,
         email: email || 'contacto@sponsor.com',
         category: 'Tecnología & AI',
