@@ -5,6 +5,7 @@ import type { SponsorTier } from '../../types/sponsor';
 import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
+import { TermsModal } from './TermsModal';
 import { 
   X, 
   Upload, 
@@ -24,7 +25,8 @@ import {
   Crosshair,
   Sliders,
   Maximize2,
-  Globe
+  Globe,
+  ShieldAlert
 } from 'lucide-react';
 
 const CM2_PRESETS = [
@@ -80,6 +82,8 @@ export const BuyModal: React.FC = () => {
   const [currentZoneName, setCurrentZoneName] = useState<string>(draftSponsor?.zoneName || 'Cofre Central Frontal');
   const [pricePerCm2, setPricePerCm2] = useState<number>(draftSponsor?.pricePerCm2 || 45);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -251,6 +255,12 @@ export const BuyModal: React.FC = () => {
 
   // Direct Save & Test
   const handleDirectSave = () => {
+    if (!acceptedTerms) {
+      sounds.playClickSound();
+      alert('⚠️ Debes aceptar los Términos, Condiciones y la Política de Contenido PG-13 para poder rotular tu espacio.');
+      return;
+    }
+
     sounds.playClickSound();
     setIsProcessing(true);
 
@@ -986,11 +996,43 @@ export const BuyModal: React.FC = () => {
                 </div>
               </div>
 
+              {/* PG-13 Mandatory Policy Callout Box */}
+              <div className="p-3.5 rounded-2xl bg-red-50/90 border border-red-200 text-red-950 space-y-1.5 shadow-xs">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-red-900">
+                  <ShieldAlert className="w-4 h-4 text-[#D5001C] shrink-0" />
+                  <span>POLÍTICA DE CONTENIDO PG-13 & MODERACIÓN</span>
+                </div>
+                <p className="text-[11px] text-red-900 leading-relaxed">
+                  Todo logo y enlace debe ser 100% apto para todo público. Se prohíbe terminantemente contenido para adultos, desnudez, violencia o ilícitos. <strong>Si se detecta una infracción, el logo se eliminará de inmediato sin derecho a reembolso, con retención del dinero y reventa del espacio.</strong>
+                </p>
+              </div>
+
+              {/* Mandatory Terms & Conditions Checkbox */}
+              <label className="flex items-start gap-2.5 cursor-pointer select-none p-1 group">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded text-[#D5001C] focus:ring-[#D5001C] border-neutral-300 accent-[#D5001C] cursor-pointer shrink-0"
+                />
+                <span className="text-[11px] text-neutral-700 leading-snug">
+                  He leído y acepto los{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsTermsModalOpen(true)}
+                    className="text-[#D5001C] underline font-bold hover:text-neutral-950 inline cursor-pointer"
+                  >
+                    Términos y Condiciones y la Política PG-13
+                  </button>{' '}
+                  (Entiendo que violar estas reglas conlleva la baja inmediata sin reembolso y la retención del pago).
+                </span>
+              </label>
+
               <button
                 type="button"
-                disabled={isProcessing}
+                disabled={isProcessing || !acceptedTerms}
                 onClick={handleDirectSave}
-                className="w-full bg-[#D5001C] hover:bg-[#b00017] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-xl shadow-red-950/30 disabled:opacity-50"
+                className="w-full bg-[#D5001C] hover:bg-[#b00017] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-xl shadow-red-950/30 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <>
@@ -1011,6 +1053,12 @@ export const BuyModal: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Terms and Conditions Modal */}
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+      />
     </div>
   );
 };

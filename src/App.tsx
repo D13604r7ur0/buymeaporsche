@@ -7,10 +7,12 @@ import { SimpleSponsorList } from './components/ui/SimpleSponsorList';
 import { BuyModal } from './components/ui/BuyModal';
 import { SponsorDetailModal } from './components/ui/SponsorDetailModal';
 import { CertificateModal } from './components/ui/CertificateModal';
+import { TermsModal } from './components/ui/TermsModal';
 import { useSponsors } from './context/SponsorContext';
 
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'3d' | 'roi' | 'events' | 'directory'>('3d');
+  const [isTermsOpen, setIsTermsOpen] = useState<boolean>(false);
   
   const {
     totalRaisedMxn,
@@ -110,7 +112,7 @@ const MainApp: React.FC = () => {
 
       {/* Minimal Footer */}
       <footer className="w-full bg-[#fafafa] border-t border-black/[0.06] py-10 px-4 sm:px-6 lg:px-8 text-neutral-500 text-xs">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <span className="text-lg">🏎️</span>
             <div>
@@ -118,13 +120,30 @@ const MainApp: React.FC = () => {
                 Porsche 911 (992)
               </span>
               <p className="text-[11px] text-neutral-400">
-                Iniciativa de patrocinio publicitario en 3D & pista por 2 años.
+                Iniciativa de patrocinio publicitario en 3D & pista por {contractYears} años.
               </p>
             </div>
           </div>
 
-          <div className="text-[11px] text-center sm:text-right text-neutral-400 font-mono">
-            Meta: $3,000,000 MXN · 2 Años de Vigencia
+          {/* Legal / Policy Links */}
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-mono">
+            <button
+              onClick={() => setIsTermsOpen(true)}
+              className="text-neutral-600 hover:text-neutral-950 underline transition cursor-pointer"
+            >
+              Términos & Condiciones
+            </button>
+            <span className="text-neutral-300">·</span>
+            <button
+              onClick={() => setIsTermsOpen(true)}
+              className="text-neutral-600 hover:text-neutral-950 underline transition cursor-pointer"
+            >
+              Política PG-13 & Moderación
+            </button>
+            <span className="text-neutral-300">·</span>
+            <span className="text-neutral-400">
+              Meta: ${goalMxn.toLocaleString()} MXN
+            </span>
           </div>
         </div>
       </footer>
@@ -133,6 +152,7 @@ const MainApp: React.FC = () => {
       <BuyModal />
       <SponsorDetailModal />
       <CertificateModal />
+      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
 
     </div>
   );
