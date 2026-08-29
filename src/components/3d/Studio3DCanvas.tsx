@@ -27,7 +27,8 @@ import {
   Pause,
   AlertTriangle,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  LayoutGrid
 } from 'lucide-react';
 
 
@@ -65,6 +66,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
   const [activeZoneName, setActiveZoneName] = useState<string>(draftSponsor.zoneName || 'Cofre Central Frontal');
   const [internalMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
   const [isAutoRotating, setIsAutoRotating] = useState<boolean>(false);
+  const [showCellGrid, setShowCellGrid] = useState<boolean>(true);
 
   const interactMode = externalInteractMode || internalMode;
 
@@ -211,11 +213,28 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       ? [targetMesh, ...nearby.filter((m) => m !== targetMesh)]
       : nearby;
 
-    if (meshesToProject.length === 0) return;
+    // Check collision and occupied cell masks for non-destructive cutout
+    const colCheck = detectSponsorOverlap(
+      {
+        ...draftSponsorRef.current,
+        position3D: pos,
+        rotation3D: rot,
+        widthCm,
+        heightCm,
+        rotationAngle: angleDeg,
+      },
+      existingSponsors
+    );
 
-    const texture = createSponsorTexture(draftSponsorRef.current, true, true, () => {
-      projectDecal(pos, rot, widthCm, heightCm, angleDeg, targetMesh);
-    });
+    const texture = createSponsorTexture(
+      draftSponsorRef.current, 
+      true, 
+      true, 
+      () => {
+        projectDecal(pos, rot, widthCm, heightCm, angleDeg, targetMesh);
+      },
+      colCheck.occupiedMasks
+    );
     const decalMat = new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
@@ -272,19 +291,6 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       fallbackMesh.renderOrder = 100;
       draftGroup.add(fallbackMesh);
     }
-
-    // Check collision and render 3D highlight warning box if overlapping
-    const colCheck = detectSponsorOverlap(
-      {
-        ...draftSponsorRef.current,
-        position3D: pos,
-        rotation3D: rot,
-        widthCm,
-        heightCm,
-        rotationAngle: angleDeg,
-      },
-      existingSponsors
-    );
 
     if (colCheck.hasOverlap) {
       const boxGeo = new THREE.BoxGeometry(w * 1.04, h * 1.04, 0.04);
@@ -755,39 +761,39 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
           )}
         </div>
 
-        {/* Center: Real-time Overlap Collision Alert / Clear Space Indicator */}
+        {/* Center: Real-time Cell Grid Status (Occupied vs Claimed) */}
         <div className="pointer-events-auto">
           {overlapResult.hasOverlap ? (
-            <div className="flex items-center gap-2 bg-red-950/90 border border-red-500/60 text-red-200 text-xs font-mono px-3.5 py-1.5 rounded-2xl shadow-xl backdrop-blur-md">
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 animate-bounce" />
+            <div className="flex items-center gap-2 bg-neutral-950/95 border-2 border-amber-500/80 text-amber-200 text-xs font-mono px-3.5 py-1.5 rounded-2xl shadow-2xl backdrop-blur-md">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
               <div className="flex flex-col text-left">
-                <span className="font-bold text-red-100 text-[11px]">
-                  ⚠️ Superposición: {overlapResult.totalOverlappedAreaCm2} cm² ({overlapResult.overlapPercentage}%)
+                <span className="font-bold text-amber-100 text-[11px]">
+                  🔒 {overlapResult.totalOverlappedAreaCm2} Celdas Ocupadas Protegidas ({overlapResult.overlapPercentage}%)
                 </span>
-                <span className="text-[9px] text-red-300">
-                  Solapa con {overlapResult.overlappingSponsors[0]?.brandName} · Cobro neto: {overlapResult.effectiveAreaCm2} cm²
+                <span className="text-[9px] text-amber-300">
+                  Logo recortado en celdas de {overlapResult.overlappingSponsors[0]?.brandName} · Cobro neto: <strong>{overlapResult.effectiveAreaCm2} celdas</strong>
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleAutoSnapFree}
-                className="ml-1 px-2.5 py-1 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] uppercase transition cursor-pointer shadow-md flex items-center gap-1 shrink-0"
-                title="Mover automáticamente a un espacio libre en este panel"
+                className="ml-1 px-2.5 py-1 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] uppercase transition cursor-pointer shadow-md flex items-center gap-1 shrink-0"
+                title="Mover automáticamente a un espacio 100% libre en este panel"
               >
                 <Sparkles className="w-3 h-3 text-yellow-300" />
-                <span>Auto-Ajustar</span>
+                <span>Auto-Reubicar</span>
               </button>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono px-3 py-1.5 rounded-2xl shadow-md backdrop-blur-md">
+            <div className="hidden sm:flex items-center gap-1.5 bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[10px] font-mono px-3 py-1.5 rounded-2xl shadow-md backdrop-blur-md">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Chapa 100% Libre</span>
+              <span>{draftSponsor.widthCm && draftSponsor.heightCm ? `${draftSponsor.widthCm * draftSponsor.heightCm} Celdas 100% Libres` : 'Celdas 100% Libres'}</span>
             </div>
           )}
         </div>
 
         {/* Right: Auto-Rotate Toggle */}
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsAutoRotating(!isAutoRotating)}
@@ -805,7 +811,20 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       </div>
 
       {/* Camera View Angle Selector Pills */}
-      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-1.5 max-w-[60%]">
+      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-1.5 max-w-[65%]">
+        <button
+          type="button"
+          onClick={() => setShowCellGrid(!showCellGrid)}
+          className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono transition cursor-pointer backdrop-blur-sm flex items-center gap-1 ${
+            showCellGrid
+              ? 'bg-sky-500/20 text-sky-300 border-sky-400/50 font-bold'
+              : 'bg-neutral-900/80 text-neutral-400 border-white/10 hover:text-white'
+          }`}
+          title="Alternar cuadrícula milimétrica de celdas"
+        >
+          <LayoutGrid className="w-3 h-3" />
+          <span>Grid Celdas</span>
+        </button>
         <button
           type="button"
           onClick={() => setStudioCamera('general')}

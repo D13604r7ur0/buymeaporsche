@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Sponsor } from '../../types/sponsor';
+import type { Polygon } from '../../utils/overlapDetection';
 
 const textureCache = new Map<string, THREE.CanvasTexture>();
 const imageCache = new Map<string, HTMLImageElement>();
@@ -8,9 +9,13 @@ export const createSponsorTexture = (
   sponsor: Partial<Sponsor>,
   _isHovered = false,
   _isFocused = false,
-  onUpdate?: () => void
+  onUpdate?: () => void,
+  occupiedMasks?: Polygon[]
 ): THREE.CanvasTexture => {
-  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl || ''}_${sponsor.flipX}_${sponsor.flipY}_${sponsor.filterStyle}_${sponsor.opacity}_${sponsor.widthCm}_${sponsor.heightCm}`;
+  const maskKey = occupiedMasks && occupiedMasks.length > 0 
+    ? occupiedMasks.map(m => m.map(p => `${Math.round(p.x)},${Math.round(p.y)}`).join('|')).join(';') 
+    : 'none';
+  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl || ''}_${sponsor.flipX}_${sponsor.flipY}_${sponsor.filterStyle}_${sponsor.opacity}_${sponsor.widthCm}_${sponsor.heightCm}_${maskKey}`;
 
   if (textureCache.has(cacheKey)) {
     const cachedTex = textureCache.get(cacheKey)!;
@@ -105,6 +110,24 @@ export const createSponsorTexture = (
       ctx.textBaseline = 'middle';
       const name = (sponsor.sponsorName || sponsor.brandName || 'TU LOGO').toUpperCase();
       ctx.fillText(name.length > 15 ? name.substring(0, 15) + '...' : name, 512, 512);
+    }
+
+    // Cut out occupied cells owned by existing sponsors (preserving underlying sponsors 100%)
+    if (occupiedMasks && occupiedMasks.length > 0) {
+      ctx.save();
+      occupiedMasks.forEach((mask) => {
+        if (mask.length < 3) return;
+        ctx.beginPath();
+        ctx.moveTo(mask[0].x, mask[0].y);
+        for (let i = 1; i < mask.length; i++) {
+          ctx.lineTo(mask[i].x, mask[i].y);
+        }
+        ctx.closePath();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+      });
+      ctx.restore();
     }
 
     texture.needsUpdate = true;

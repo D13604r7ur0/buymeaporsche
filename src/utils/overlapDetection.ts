@@ -22,6 +22,7 @@ export interface OverlapItem {
   brandName: string;
   overlapAreaCm2: number;
   overlapPercentage: number; // Percentage of the draft logo covered
+  localTexturePolygon: Polygon; // Polygon in 0..1024 texture canvas space
 }
 
 export interface OverlapDetectionResult {
@@ -30,6 +31,7 @@ export interface OverlapDetectionResult {
   effectiveAreaCm2: number;
   overlapPercentage: number;
   overlappingSponsors: OverlapItem[];
+  occupiedMasks: Polygon[]; // Local texture polygons of occupied cells to clip
   message: string;
 }
 
@@ -276,8 +278,43 @@ export function calculateSponsorOverlapArea(
 }
 
 /**
+ * Converts a polygon from 2D panel space (cm) to draft sponsor's local 1024x1024 canvas texture pixel space.
+ */
+export function mapPanelPolygonToTextureSpace(
+  poly: Polygon,
+  draftSponsor: Partial<Sponsor>
+): Polygon {
+  const data = getSponsorPolygon2D(draftSponsor);
+  const cx = data.center.x;
+  const cy = data.center.y;
+  const widthCm = Math.max(1, data.widthCm);
+  const heightCm = Math.max(1, data.heightCm);
+  const angleDeg = draftSponsor.rotationAngle || 0;
+
+  const rad = (angleDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+
+  return poly.map((pt) => {
+    // Relative to center
+    const dx = pt.x - cx;
+    const dy = pt.y - cy;
+
+    // Inverse rotate to align with sticker axis
+    const localX = dx * cos + dy * sin;
+    const localY = -dx * sin + dy * cos;
+
+    // Map [-widthCm/2, widthCm/2] -> [0, 1024]
+    const u = 512 + (localX / widthCm) * 1024;
+    const v = 512 + (localY / heightCm) * 1024;
+
+    return { x: Math.round(u * 10) / 10, y: Math.round(v * 10) / 10 };
+  });
+}
+
+/**
  * Detects all collisions/overlaps between a draft sponsor and existing sponsors on the car.
- * Computes exact overlapped area and net effective car body area.
+ * Computes exact overlapped area, net effective car body area, and local texture clipping masks.
  */
 export function detectSponsorOverlap(
   draftSponsor: Partial<Sponsor>,
@@ -285,23 +322,39 @@ export function detectSponsorOverlap(
 ): OverlapDetectionResult {
   const totalAreaCm2 = (draftSponsor.widthCm || 35) * (draftSponsor.heightCm || 20);
   const overlappingSponsors: OverlapItem[] = [];
+  const occupiedMasks: Polygon[] = [];
 
   let totalOverlappedAreaCm2 = 0;
+
+  const dataA = getSponsorPolygon2D(draftSponsor);
 
   existingSponsors.forEach((sponsor) => {
     // Skip self if comparing against an existing record with matching ID
     if (draftSponsor.id && sponsor.id === draftSponsor.id) return;
 
-    const overlap = calculateSponsorOverlapArea(draftSponsor, sponsor);
-    if (overlap > 0) {
-      const percentage = Math.min(100, Math.round((overlap / totalAreaCm2) * 100));
+    const panelA = dataA.panel;
+    const panelB = getPanelType(sponsor);
+    if (panelA !== panelB) return;
+
+    const dataB = getSponsorPolygon2D(sponsor);
+    const clipped = clipPolygon(dataA.polygon, dataB.polygon);
+    const area = polygonArea(clipped);
+
+    if (area >= 1.0) {
+      const roundedArea = Math.round(area * 10) / 10;
+      const percentage = Math.min(100, Math.round((roundedArea / totalAreaCm2) * 100));
+      const localTexPoly = mapPanelPolygonToTextureSpace(clipped, draftSponsor);
+
       overlappingSponsors.push({
         sponsorId: sponsor.id,
         brandName: sponsor.brandName || sponsor.sponsorName || 'Patrocinador Existente',
-        overlapAreaCm2: overlap,
+        overlapAreaCm2: roundedArea,
         overlapPercentage: percentage,
+        localTexturePolygon: localTexPoly,
       });
-      totalOverlappedAreaCm2 += overlap;
+
+      occupiedMasks.push(localTexPoly);
+      totalOverlappedAreaCm2 += roundedArea;
     }
   });
 
@@ -317,7 +370,7 @@ export function detectSponsorOverlap(
   let message = '';
   if (hasOverlap) {
     const names = overlappingSponsors.map((o) => `"${o.brandName}" (${o.overlapAreaCm2} cm²)`).join(', ');
-    message = `Se detectó superposición con ${names}. Solo se cobrará el área neta libre de chapa (${effectiveAreaCm2} cm²).`;
+    message = `Se detectaron ${totalOverlappedAreaCm2} cm² en celdas ocupadas por ${names}. Esas celdas están protegidas y tu logo se recortará en ellas. Solo se te cobrarán las ${effectiveAreaCm2} cm² de celdas libres.`;
   }
 
   return {
@@ -326,6 +379,7 @@ export function detectSponsorOverlap(
     effectiveAreaCm2,
     overlapPercentage,
     overlappingSponsors,
+    occupiedMasks,
     message,
   };
 }

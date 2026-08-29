@@ -9,6 +9,7 @@ import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
 import { isMeshForbidden, getNearbyPaintMeshes } from './decalHelpers';
 import type { Sponsor } from '../../types/sponsor';
+import { detectSponsorOverlap } from '../../utils/overlapDetection';
 import { RotateCw, ZoomIn, ZoomOut, Loader2, MousePointerClick, Plus } from 'lucide-react';
 
 
@@ -444,7 +445,8 @@ export const PorscheScene: React.FC = () => {
       }
 
       if (isPlacementMode && draftSponsor && draftSponsor.position3D) {
-        const draftTex = createSponsorTexture(draftSponsor, true, true);
+        const overlap = detectSponsorOverlap(draftSponsor, sponsors);
+        const draftTex = createSponsorTexture(draftSponsor, true, true, undefined, overlap.occupiedMasks);
         const draftMat = new THREE.MeshBasicMaterial({
           map: draftTex,
           transparent: true,
