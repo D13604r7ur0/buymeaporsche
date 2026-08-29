@@ -278,17 +278,20 @@ export const PorscheScene: React.FC = () => {
     // Decals container group
     const decalsGroup = new THREE.Group();
     decalsGroup.name = 'sponsors_decals_group';
+    decalsGroup.renderOrder = 100;
     scene.add(decalsGroup);
     decalsGroupRef.current = decalsGroup;
 
     // Hotspot Pins container group
     const pinsGroup = new THREE.Group();
     pinsGroup.name = 'sponsors_pins_group';
+    pinsGroup.renderOrder = 110;
     scene.add(pinsGroup);
     pinsGroupRef.current = pinsGroup;
 
     // Draft placement group
     const draftGroup = new THREE.Group();
+    draftGroup.renderOrder = 100;
     scene.add(draftGroup);
     draftDecalGroupRef.current = draftGroup;
 
@@ -413,16 +416,15 @@ export const PorscheScene: React.FC = () => {
 
       const texture = createSponsorTexture(sponsor, isHovered, isFocused);
       
-      const material = new THREE.MeshStandardMaterial({
+      const material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        roughness: 0.15,
-        metalness: 0.05,
         depthTest: true,
         depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -4,
         polygonOffsetUnits: -4,
+        side: THREE.DoubleSide,
       });
 
       const pos = new THREE.Vector3(...sponsor.position3D);
@@ -438,22 +440,36 @@ export const PorscheScene: React.FC = () => {
 
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
       const scaleFactor = 0.028;
-      const size = new THREE.Vector3(
-        (sponsor.widthCm || 35) * scaleFactor,
-        (sponsor.heightCm || 20) * scaleFactor,
-        0.05
-      );
+      const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
+      const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
+      const size = new THREE.Vector3(w, h, 0.25);
+
+      const beforeCount = decalsGroup.children.length;
 
       validPaintMeshes.forEach((mesh) => {
         try {
           const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
-          const decalMesh = new THREE.Mesh(decalGeo, material);
-          decalMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
-          decalsGroup.add(decalMesh);
+          if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
+            const decalMesh = new THREE.Mesh(decalGeo, material);
+            decalMesh.renderOrder = 100;
+            decalMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
+            decalsGroup.add(decalMesh);
+          }
         } catch (err) {
           console.warn('Decal geometry projection warning', err);
         }
       });
+
+      // If DecalGeometry produced empty mesh, add resilient fallback plane
+      if (decalsGroup.children.length === beforeCount) {
+        const planeGeo = new THREE.PlaneGeometry(w, h);
+        const planeMesh = new THREE.Mesh(planeGeo, material);
+        planeMesh.position.copy(pos);
+        planeMesh.rotation.copy(finalEuler);
+        planeMesh.renderOrder = 100;
+        planeMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
+        decalsGroup.add(planeMesh);
+      }
 
       // Interactive Glowing Hotspot Pin
       const pinGeo = new THREE.SphereGeometry(0.04, 16, 16);
@@ -479,34 +495,46 @@ export const PorscheScene: React.FC = () => {
 
       if (isPlacementMode && draftSponsor && draftSponsor.position3D) {
         const draftTex = createSponsorTexture(draftSponsor, true, true);
-        const draftMat = new THREE.MeshStandardMaterial({
+        const draftMat = new THREE.MeshBasicMaterial({
           map: draftTex,
           transparent: true,
-          roughness: 0.2,
           depthTest: true,
           depthWrite: false,
           polygonOffset: true,
           polygonOffsetFactor: -4,
           polygonOffsetUnits: -4,
+          side: THREE.DoubleSide,
         });
 
         const dPos = new THREE.Vector3(...draftSponsor.position3D);
         const dEuler = new THREE.Euler(...(draftSponsor.rotation3D || [-1.22, 0, 0]), 'YXZ');
-        const dSize = new THREE.Vector3(
-          (draftSponsor.widthCm || 35) * 0.028,
-          (draftSponsor.heightCm || 20) * 0.028,
-          0.05
-        );
+        const dw = Math.max(0.2, (draftSponsor.widthCm || 35) * 0.028);
+        const dh = Math.max(0.15, (draftSponsor.heightCm || 20) * 0.028);
+        const dSize = new THREE.Vector3(dw, dh, 0.25);
+
+        const beforeDraftCount = draftGroup.children.length;
 
         validPaintMeshes.forEach((mesh) => {
           try {
             const dGeo = new DecalGeometry(mesh, dPos, dEuler, dSize);
-            const dMesh = new THREE.Mesh(dGeo, draftMat);
-            draftGroup.add(dMesh);
+            if (dGeo.attributes.position && dGeo.attributes.position.count > 0) {
+              const dMesh = new THREE.Mesh(dGeo, draftMat);
+              dMesh.renderOrder = 100;
+              draftGroup.add(dMesh);
+            }
           } catch {
             // ignore
           }
         });
+
+        if (draftGroup.children.length === beforeDraftCount) {
+          const planeGeo = new THREE.PlaneGeometry(dw, dh);
+          const planeMesh = new THREE.Mesh(planeGeo, draftMat);
+          planeMesh.position.copy(dPos);
+          planeMesh.rotation.copy(dEuler);
+          planeMesh.renderOrder = 100;
+          draftGroup.add(planeMesh);
+        }
       }
     }
   }, [sponsors, hoveredSponsor, focusedSponsorId, selectedSponsor, draftSponsor, isPlacementMode, isLoadingModel]);

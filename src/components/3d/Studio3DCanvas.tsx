@@ -259,7 +259,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     const scaleFactor = 0.028;
     const w = Math.max(0.2, (widthCm || 35) * scaleFactor);
     const h = Math.max(0.15, (heightCm || 20) * scaleFactor);
-    const d = 0.05; // 5cm skin-tight depth so decal NEVER penetrates into wheels or interior
+    const d = 0.25;
 
     const size = new THREE.Vector3(w, h, d);
 
@@ -269,8 +269,11 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
       try {
         const decalGeo = new DecalGeometry(mesh, position, finalEuler, size);
-        const decalMesh = new THREE.Mesh(decalGeo, decalMat);
-        draftGroup.add(decalMesh);
+        if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
+          const decalMesh = new THREE.Mesh(decalGeo, decalMat);
+          decalMesh.renderOrder = 100;
+          draftGroup.add(decalMesh);
+        }
       } catch (err) {
         console.warn('Decal projection error on mesh', err);
       }
@@ -282,6 +285,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const fallbackMesh = new THREE.Mesh(fallbackGeo, decalMat);
       fallbackMesh.position.copy(position);
       fallbackMesh.rotation.copy(finalEuler);
+      fallbackMesh.renderOrder = 100;
       draftGroup.add(fallbackMesh);
     }
   }, []);
@@ -678,23 +682,35 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
       const scaleFactor = 0.028;
-      const size = new THREE.Vector3(
-        (sponsor.widthCm || 35) * scaleFactor,
-        (sponsor.heightCm || 20) * scaleFactor,
-        0.05
-      );
+      const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
+      const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
+      const size = new THREE.Vector3(w, h, 0.25);
+
+      const beforeExistingCount = existingGroup.children.length;
 
       paintMeshesRef.current.forEach((mesh) => {
         if (isMeshForbidden(mesh)) return;
 
         try {
           const decalGeo = new DecalGeometry(mesh, pos, finalEuler, size);
-          const decalMesh = new THREE.Mesh(decalGeo, mat);
-          existingGroup.add(decalMesh);
+          if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
+            const decalMesh = new THREE.Mesh(decalGeo, mat);
+            decalMesh.renderOrder = 100;
+            existingGroup.add(decalMesh);
+          }
         } catch (err) {
           console.warn('Error placing existing sponsor decal', err);
         }
       });
+
+      if (existingGroup.children.length === beforeExistingCount) {
+        const planeGeo = new THREE.PlaneGeometry(w, h);
+        const planeMesh = new THREE.Mesh(planeGeo, mat);
+        planeMesh.position.copy(pos);
+        planeMesh.rotation.copy(finalEuler);
+        planeMesh.renderOrder = 100;
+        existingGroup.add(planeMesh);
+      }
     });
   }, [existingSponsors, isLoading]);
 
