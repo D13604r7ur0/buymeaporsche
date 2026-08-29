@@ -388,9 +388,9 @@ export const PorscheScene: React.FC = () => {
       const offsetPos = pos.clone().add(outwardNormal.multiplyScalar(0.01));
 
       const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
-      const scaleFactor = 0.010;
-      const w = Math.max(0.2, (sponsor.widthCm || 35) * scaleFactor);
-      const h = Math.max(0.15, (sponsor.heightCm || 20) * scaleFactor);
+      const scaleFactor = 0.028;
+      const w = (sponsor.widthCm || 35) * scaleFactor;
+      const h = (sponsor.heightCm || 20) * scaleFactor;
       const size = new THREE.Vector3(w, h, 0.40);
 
       const beforeCount = decalsGroup.children.length;
@@ -463,8 +463,8 @@ export const PorscheScene: React.FC = () => {
         const dOutwardNormal = new THREE.Vector3(0, 0, 1).applyMatrix4(dBaseMatrix).normalize();
         const dOffsetPos = dPos.clone().add(dOutwardNormal.multiplyScalar(0.01));
 
-        const dw = Math.max(0.2, (draftSponsor.widthCm || 35) * 0.010);
-        const dh = Math.max(0.15, (draftSponsor.heightCm || 20) * 0.010);
+        const dw = (draftSponsor.widthCm || 35) * 0.028;
+        const dh = (draftSponsor.heightCm || 20) * 0.028;
         const dSize = new THREE.Vector3(dw, dh, 0.40);
 
         const beforeDraftCount = draftGroup.children.length;
