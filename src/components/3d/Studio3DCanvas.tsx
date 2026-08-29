@@ -226,8 +226,10 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
 
     if (meshesToProject.length === 0) return;
 
-    const texture = createSponsorTexture(draftSponsorRef.current, true, true);
-    const decalMat = new THREE.MeshStandardMaterial({
+    const texture = createSponsorTexture(draftSponsorRef.current, true, true, () => {
+      projectDecal(pos, rot, widthCm, heightCm, angleDeg, targetMesh);
+    });
+    const decalMat = new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
       depthTest: true,
@@ -235,8 +237,7 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       polygonOffset: true,
       polygonOffsetFactor: -4,
       polygonOffsetUnits: -4,
-      roughness: 0.15,
-      metalness: 0.05,
+      side: THREE.DoubleSide,
     });
 
     const position = new THREE.Vector3(...pos);
@@ -656,17 +657,18 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
     }
 
     existingSponsors.forEach((sponsor) => {
-      const tex = createSponsorTexture(sponsor, false, false);
-      const mat = new THREE.MeshStandardMaterial({
+      const tex = createSponsorTexture(sponsor, false, false, () => {
+        if (tex) tex.needsUpdate = true;
+      });
+      const mat = new THREE.MeshBasicMaterial({
         map: tex,
         transparent: true,
-        roughness: 0.15,
-        metalness: 0.05,
         depthTest: true,
         depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -4,
         polygonOffsetUnits: -4,
+        side: THREE.DoubleSide,
       });
 
       const pos = new THREE.Vector3(...sponsor.position3D);

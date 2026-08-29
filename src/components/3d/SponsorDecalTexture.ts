@@ -7,12 +7,18 @@ const imageCache = new Map<string, HTMLImageElement>();
 export const createSponsorTexture = (
   sponsor: Partial<Sponsor>,
   _isHovered = false,
-  _isFocused = false
+  _isFocused = false,
+  onUpdate?: () => void
 ): THREE.CanvasTexture => {
-  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl}_${sponsor.flipX}_${sponsor.flipY}_${sponsor.filterStyle}_${sponsor.opacity}_${sponsor.widthCm}_${sponsor.heightCm}`;
+  const cacheKey = `${sponsor.id || 'draft'}_${sponsor.brandName}_${sponsor.logoUrl || ''}_${sponsor.flipX}_${sponsor.flipY}_${sponsor.filterStyle}_${sponsor.opacity}_${sponsor.widthCm}_${sponsor.heightCm}`;
 
   if (textureCache.has(cacheKey)) {
-    return textureCache.get(cacheKey)!;
+    const cachedTex = textureCache.get(cacheKey)!;
+    // If image is already in imageCache, ensure it is drawn
+    if (sponsor.logoUrl && imageCache.has(sponsor.logoUrl)) {
+      cachedTex.needsUpdate = true;
+    }
+    return cachedTex;
   }
 
   // Square High-Resolution 1024x1024 Canvas for Ultra-Crisp Decals
@@ -74,7 +80,7 @@ export const createSponsorTexture = (
           ctx.fillStyle = '#0f172a';
           ctx.fillRect(0, 0, 1024, 1024);
         } else {
-          // Full-color original logo
+          // Full-color original logo with vibrant clarity
           ctx.drawImage(logoImg, imgX, imgY, drawW, drawH);
         }
 
@@ -83,21 +89,21 @@ export const createSponsorTexture = (
         console.warn('Error drawing pure logo decal on canvas', err);
       }
     } else {
-      // Clean, elegant default text placeholder when no logo is uploaded yet
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      // Clean, elegant default text badge when no logo is uploaded yet
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
       ctx.beginPath();
       ctx.roundRect(128, 384, 768, 256, 32);
       ctx.fill();
 
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 10;
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 56px "Plus Jakarta Sans", system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const name = (sponsor.sponsorName || sponsor.brandName || 'SUBE TU LOGO').toUpperCase();
+      const name = (sponsor.sponsorName || sponsor.brandName || 'TU LOGO').toUpperCase();
       ctx.fillText(name.length > 15 ? name.substring(0, 15) + '...' : name, 512, 512);
     }
 
@@ -113,11 +119,14 @@ export const createSponsorTexture = (
       img.onload = () => {
         imageCache.set(sponsor.logoUrl!, img);
         drawContent();
+        if (onUpdate) onUpdate();
       };
       img.onerror = () => {
         console.warn('Failed to load logo image:', sponsor.logoUrl);
       };
       img.src = sponsor.logoUrl;
+      // Also draw placeholder while loading
+      drawContent();
     } else {
       drawContent();
     }
