@@ -95,6 +95,19 @@ export const BuyModal: React.FC = () => {
     setTargetAreaCm2(widthCm * heightCm);
   }, [widthCm, heightCm]);
 
+  // Sync state when modal opens from Calculator
+  useEffect(() => {
+    if (isBuyModalOpen && draftSponsor) {
+      setWidthCm(draftSponsor.widthCm || 35);
+      setHeightCm(draftSponsor.heightCm || 20);
+      setPricePerCm2(draftSponsor.pricePerCm2 || 45);
+      setCurrentZoneName(draftSponsor.zoneName || 'Cofre Central Frontal');
+      setSelectedTier(draftSponsor.tier || 'hood_central');
+      setCurrentPosition3D(draftSponsor.position3D || [0, 0.96, 1.2]);
+      setCurrentRotation3D(draftSponsor.rotation3D || [-1.25, 0, 0]);
+    }
+  }, [isBuyModalOpen]);
+
   // Sync Draft with 3D in Real-Time continuously
   useEffect(() => {
     if (!isBuyModalOpen) return;

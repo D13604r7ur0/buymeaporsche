@@ -116,7 +116,7 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
                 </div>
                 <input
                   type="range"
-                  min={8}
+                  min={1}
                   max={120}
                   step={1}
                   value={customWidth}
@@ -133,7 +133,7 @@ export const WhatYouPayBreakdown: React.FC<{ onNavigateTo3D?: () => void }> = ()
                 </div>
                 <input
                   type="range"
-                  min={5}
+                  min={1}
                   max={60}
                   step={1}
                   value={customHeight}
