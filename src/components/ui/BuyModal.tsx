@@ -5,7 +5,6 @@ import type { SponsorTier } from '../../types/sponsor';
 import { CONTRACT_DAYS, CONTRACT_YEARS } from '../../utils/sampleData';
 import { sounds } from '../../utils/soundEffects';
 import { Studio3DCanvas } from '../3d/Studio3DCanvas';
-import { Studio2DView } from '../2d/Studio2DView';
 import { 
   X, 
   Upload, 
@@ -25,8 +24,6 @@ import {
   Crosshair,
   Sliders,
   Maximize2,
-  Box,
-  Layers,
   Globe
 } from 'lucide-react';
 
@@ -49,9 +46,6 @@ export const BuyModal: React.FC = () => {
     focusSponsor,
     sponsors,
   } = useSponsors();
-
-  // Mode View: 3D Interactive Car vs 2D Blueprint Despiece
-  const [viewDimension, setViewDimension] = useState<'3d' | '2d'>('3d');
 
   // Logo & dimensions state (Selling by cm and cm²)
   const [selectedTier, setSelectedTier] = useState<SponsorTier>(draftSponsor?.tier || 'hood_central');
@@ -335,44 +329,16 @@ export const BuyModal: React.FC = () => {
           </div>
           <div>
             <h1 className="text-white text-xs sm:text-sm font-heading font-bold tracking-wide">
-              Estudio 3D & 2D Blueprint · Venta por cm²
+              Estudio 3D Oficial · Venta por cm²
             </h1>
             <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">
-              Diseña en 3D interactivo o en el Blueprint 2D desplegado con 100% de precisión
+              Diseña sobre la chapa real del Porsche 911 con ajuste seamless sin traslapes
             </span>
           </div>
         </div>
 
-        {/* View Mode Switcher: 3D Studio vs 2D Blueprint */}
+        {/* Close Button */}
         <div className="flex items-center gap-2">
-          <div className="bg-neutral-900 border border-white/15 p-1 rounded-xl flex items-center gap-1 shadow-md">
-            <button
-              type="button"
-              onClick={() => setViewDimension('3d')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono transition cursor-pointer flex items-center gap-1.5 ${
-                viewDimension === '3d'
-                  ? 'bg-white text-neutral-950 font-bold shadow-xs'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Box className="w-3.5 h-3.5" />
-              <span>Vista 3D</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewDimension('2d')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono transition cursor-pointer flex items-center gap-1.5 ${
-                viewDimension === '2d'
-                  ? 'bg-sky-500 text-white font-bold shadow-xs'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Vista 2D (Blueprint)</span>
-            </button>
-          </div>
-
           <button
             onClick={handleClose}
             className="p-1.5 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer ml-2"
@@ -388,69 +354,42 @@ export const BuyModal: React.FC = () => {
         
         {/* LEFT PANEL: 3D Canvas OR 2D Blueprint View (58% Desktop) */}
         <div className="w-full lg:w-[58%] h-[44vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/10 relative bg-neutral-950">
-          {viewDimension === '3d' ? (
-            <Studio3DCanvas
-              draftSponsor={{
-                id: 'draft',
-                brandName: accountName || 'TU CUENTA',
-                sponsorName: accountName || '',
-                slogan,
-                logoUrl: logoPreviewUrl,
-                position3D: currentPosition3D,
-                rotation3D: currentRotation3D,
-                widthCm,
-                heightCm,
-                rotationAngle,
-                flipX,
-                flipY,
-                filterStyle,
-                opacity,
-                scale3D: [widthCm / 28, heightCm / 28, 1],
-                zoneName: currentZoneName,
-                tier: selectedTier,
-                pricePerCm2,
-                stickerBgColor: 'transparent',
-                stickerBorderColor: 'transparent',
-                logoScale: 1,
-              }}
-              onUpdateDraftPosition={handleUpdateFrom3D}
-              onUpdateDimensions={(w, h) => {
-                setWidthCm(w);
-                setHeightCm(h);
-              }}
-              rotationAngle={rotationAngle}
-              onUpdateRotationAngle={setRotationAngle}
-              existingSponsors={sponsors}
-              cameraViewTrigger={cameraViewTrigger}
-              interactMode={interactMode}
-              onToggleInteractMode={setInteractMode}
-            />
-          ) : (
-            <Studio2DView
-              draftSponsor={{
-                id: 'draft',
-                brandName: accountName || 'TU CUENTA',
-                sponsorName: accountName || '',
-                slogan,
-                logoUrl: logoPreviewUrl,
-                position3D: currentPosition3D,
-                rotation3D: currentRotation3D,
-                widthCm,
-                heightCm,
-                zoneName: currentZoneName,
-                tier: selectedTier,
-                pricePerCm2,
-              }}
-              onUpdateDraftPosition={handleUpdateFrom3D}
-              widthCm={widthCm}
-              heightCm={heightCm}
-              rotationAngle={rotationAngle}
-              flipX={flipX}
-              flipY={flipY}
-              filterStyle={filterStyle}
-              opacity={opacity}
-            />
-          )}
+          <Studio3DCanvas
+            draftSponsor={{
+              id: 'draft',
+              brandName: accountName || 'TU CUENTA',
+              sponsorName: accountName || '',
+              slogan,
+              logoUrl: logoPreviewUrl,
+              position3D: currentPosition3D,
+              rotation3D: currentRotation3D,
+              widthCm,
+              heightCm,
+              rotationAngle,
+              flipX,
+              flipY,
+              filterStyle,
+              opacity,
+              scale3D: [widthCm / 28, heightCm / 28, 1],
+              zoneName: currentZoneName,
+              tier: selectedTier,
+              pricePerCm2,
+              stickerBgColor: 'transparent',
+              stickerBorderColor: 'transparent',
+              logoScale: 1,
+            }}
+            onUpdateDraftPosition={handleUpdateFrom3D}
+            onUpdateDimensions={(w, h) => {
+              setWidthCm(w);
+              setHeightCm(h);
+            }}
+            rotationAngle={rotationAngle}
+            onUpdateRotationAngle={setRotationAngle}
+            existingSponsors={sponsors}
+            cameraViewTrigger={cameraViewTrigger}
+            interactMode={interactMode}
+            onToggleInteractMode={setInteractMode}
+          />
         </div>
 
         {/* RIGHT PANEL: Live Controls & Real-Time Pricing (42% Desktop) */}
@@ -459,72 +398,40 @@ export const BuyModal: React.FC = () => {
           <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between">
             <div className="space-y-6">
               
-              {/* Header Instructions & 3D/2D View Mode Selector */}
+              {/* Header Instructions & 3D Interactive Mode Toggle */}
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-sky-600 font-semibold block mb-1">
-                  Herramientas de Vinilado & Venta por cm²
+                  Estudio 3D Oficial · Venta por cm²
                 </span>
                 <h2 className="text-xl sm:text-2xl font-heading font-bold text-neutral-900">
-                  Personalización Completa del Logo
+                  Personalización del Logo en 3D
                 </h2>
                 <p className="text-xs text-neutral-500 font-sans mt-0.5 mb-3">
-                  Cambia entre la vista 3D del auto y el Blueprint 2D plano para colocar tu diseño con precisión.
+                  Arrastra tu logo sobre el Porsche 3D. El sistema evita traslapes automáticamente con un encaje seamless.
                 </p>
 
-                {/* View Dimension & 3D Mode Selector in Sidebar */}
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-neutral-100 rounded-2xl border border-black/10">
-                    <button
-                      type="button"
-                      onClick={() => setViewDimension('3d')}
-                      className={`py-2 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                        viewDimension === '3d'
-                          ? 'bg-neutral-900 text-white font-bold shadow-xs'
-                          : 'text-neutral-600 hover:text-neutral-900'
-                      }`}
-                    >
-                      <Box className="w-3.5 h-3.5" />
-                      <span>Estudio 3D</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewDimension('2d')}
-                      className={`py-2 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                        viewDimension === '2d'
-                          ? 'bg-sky-600 text-white font-bold shadow-xs'
-                          : 'text-neutral-600 hover:text-neutral-900'
-                      }`}
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>Blueprint 2D</span>
-                    </button>
-                  </div>
-
-                  {viewDimension === '3d' && (
-                    <button
-                      type="button"
-                      onClick={() => setInteractMode(interactMode === 'moveLogo' ? 'orbitCamera' : 'moveLogo')}
-                      className={`w-full py-2 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-2 border shadow-xs ${
-                        interactMode === 'moveLogo'
-                          ? 'bg-sky-50 text-sky-700 border-sky-300 font-bold hover:bg-sky-100'
-                          : 'bg-amber-50 text-amber-800 border-amber-300 font-bold hover:bg-amber-100'
-                      }`}
-                    >
-                      {interactMode === 'moveLogo' ? (
-                        <>
-                          <Move className="w-3.5 h-3.5 text-sky-600" />
-                          <span>✋ Modo: Mover Logo · (Clic para Girar Auto)</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3.5 h-3.5 text-amber-600" />
-                          <span>👁️ Modo: Girar Auto · (Clic para Mover Logo)</span>
-                        </>
-                      )}
-                    </button>
+                {/* 3D Mode Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setInteractMode(interactMode === 'moveLogo' ? 'orbitCamera' : 'moveLogo')}
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-mono transition cursor-pointer flex items-center justify-center gap-2 border shadow-xs ${
+                    interactMode === 'moveLogo'
+                      ? 'bg-sky-50 text-sky-700 border-sky-300 font-bold hover:bg-sky-100'
+                      : 'bg-amber-50 text-amber-800 border-amber-300 font-bold hover:bg-amber-100'
+                  }`}
+                >
+                  {interactMode === 'moveLogo' ? (
+                    <>
+                      <Move className="w-3.5 h-3.5 text-sky-600" />
+                      <span>✋ Modo: Mover Logo · (Clic para Girar Auto)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-amber-600" />
+                      <span>👁️ Modo: Girar Auto · (Clic para Mover Logo)</span>
+                    </>
                   )}
-                </div>
+                </button>
               </div>
 
               {/* Logo Uploader Dropzone */}

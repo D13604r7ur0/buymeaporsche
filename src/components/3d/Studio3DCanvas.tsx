@@ -8,7 +8,7 @@ import { createPorscheCarGroup } from './PorscheCarMesh';
 import { createSponsorTexture } from './SponsorDecalTexture';
 import type { Sponsor, SponsorTier } from '../../types/sponsor';
 import { ZONES } from '../../utils/sampleData';
-import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw, Play, Pause } from 'lucide-react';
+import { Loader2, RotateCw, ZoomIn, ZoomOut, Compass, Move, Eye, Plus, Minus, RefreshCw, Play, Pause, Sparkles } from 'lucide-react';
 
 const isMeshForbidden = (mesh: THREE.Mesh): boolean => {
   const n = mesh.name.toLowerCase();
@@ -93,6 +93,8 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       onToggleInteractMode(mode);
     }
   };
+
+  const [isSeamlessSnapped, setIsSeamlessSnapped] = useState<boolean>(false);
 
   // Ref to avoid stale closures during high-frequency drag events
   const draftSponsorRef = useRef<Partial<Sponsor>>({ ...draftSponsor, rotationAngle });
@@ -320,11 +322,50 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
       const euler = new THREE.Euler().setFromRotationMatrix(rotMatrix, 'YXZ');
 
       const rot3D: [number, number, number] = [euler.x, euler.y, euler.z];
-      const pos3D: [number, number, number] = [offsetPoint.x, offsetPoint.y, offsetPoint.z];
 
       const curW = draftSponsorRef.current?.widthCm || 35;
       const curH = draftSponsorRef.current?.heightCm || 20;
       const curAngle = draftSponsorRef.current?.rotationAngle || rotationAngle || 0;
+
+      // Automatic Seamless Non-Overlapping Resolver:
+      // Prevents decals from intersecting by cleanly relaxing/sliding to the closest free surface!
+      const curScale = 0.028;
+      const draftRadius = Math.sqrt(Math.pow((curW * curScale) / 2, 2) + Math.pow((curH * curScale) / 2, 2));
+
+      let adjustedOffsetPoint = offsetPoint.clone();
+      let snapped = false;
+
+      if (existingSponsors && existingSponsors.length > 0) {
+        for (let pass = 0; pass < 3; pass++) {
+          for (const sp of existingSponsors) {
+            if (!sp.position3D) continue;
+            const spPos = new THREE.Vector3(...sp.position3D);
+            const spW = sp.widthCm || 35;
+            const spH = sp.heightCm || 20;
+            const spRadius = Math.sqrt(Math.pow((spW * curScale) / 2, 2) + Math.pow((spH * curScale) / 2, 2));
+
+            const minAllowedDist = (draftRadius + spRadius) * 0.94;
+            const currentDist = adjustedOffsetPoint.distanceTo(spPos);
+
+            if (currentDist < minAllowedDist && currentDist > 0.001) {
+              snapped = true;
+              const pushDir = new THREE.Vector3().subVectors(adjustedOffsetPoint, spPos).normalize();
+              const pushMag = minAllowedDist - currentDist + 0.025;
+              adjustedOffsetPoint.addScaledVector(pushDir, pushMag);
+            } else if (currentDist <= 0.001) {
+              snapped = true;
+              adjustedOffsetPoint.addScaledVector(right, draftRadius + spRadius + 0.05);
+            }
+          }
+        }
+      }
+
+      setIsSeamlessSnapped(snapped);
+      const pos3D: [number, number, number] = [
+        Number(adjustedOffsetPoint.x.toFixed(3)),
+        Number(adjustedOffsetPoint.y.toFixed(3)),
+        Number(adjustedOffsetPoint.z.toFixed(3))
+      ];
 
       // Multi-zone proportional calculation: if the sticker spans across 2 or more panels,
       // calculate the exact proportional blended rate of each part touched!
@@ -751,6 +792,13 @@ export const Studio3DCanvas: React.FC<Studio3DCanvasProps> = ({
             <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 text-white text-[11px] font-mono px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2">
               <Compass className="w-3.5 h-3.5 text-sky-400" />
               <span>{activeZoneName}</span>
+            </div>
+          )}
+
+          {isSeamlessSnapped && (
+            <div className="bg-emerald-400 text-neutral-950 text-[11px] font-mono font-bold px-3.5 py-1.5 rounded-2xl shadow-xl flex items-center gap-1.5 backdrop-blur-md animate-pulse border border-emerald-300">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>✨ Encaje Seamless Automático (Sin Traslapes)</span>
             </div>
           )}
         </div>
