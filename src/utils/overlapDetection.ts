@@ -1,4 +1,5 @@
 import type { Sponsor } from '../types/sponsor';
+import { WORLD_PER_CM } from '../components/3d/decals/scale';
 
 export type PanelType = 
   | 'hood' 
@@ -35,7 +36,11 @@ export interface OverlapDetectionResult {
   message: string;
 }
 
-const SCALE_FACTOR = 0.028; // Three.js units per cm (1 unit = 35.71 cm)
+/**
+ * Three.js world units per centimeter. Shared with the 3D decal system so that
+ * collision cells, pricing and what the user sees on the car stay in sync.
+ */
+const SCALE_FACTOR = WORLD_PER_CM;
 
 /**
  * Determines which geometric body panel a sponsor decal is placed on.

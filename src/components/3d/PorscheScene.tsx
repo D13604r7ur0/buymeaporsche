@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
 import { useSponsors } from '../../context/SponsorContext';
 import type { CameraPresetName } from '../../context/SponsorContext';
 import { loadRealPorscheModel } from './RealPorscheLoader';
 import { createPorscheCarGroup } from './PorscheCarMesh';
-import { createSponsorTexture } from './SponsorDecalTexture';
-import { isMeshForbidden, getNearbyPaintMeshes } from './decalHelpers';
+import {
+  CarSurface,
+  DecalLayer,
+  orientationToEuler,
+  sponsorToDecalItem,
+} from './decals';
 import type { Sponsor } from '../../types/sponsor';
 import { detectSponsorOverlap } from '../../utils/overlapDetection';
 import { RotateCw, ZoomIn, ZoomOut, Loader2, MousePointerClick, Plus } from 'lucide-react';
@@ -46,12 +49,12 @@ export const PorscheScene: React.FC = () => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const carGroupRef = useRef<THREE.Group | null>(null);
-  const paintMeshesRef = useRef<THREE.Mesh[]>([]);
-  const wheelMeshesRef = useRef<THREE.Mesh[]>([]);
-  const decalsGroupRef = useRef<THREE.Group | null>(null);
+  const carGroupRef = useRef<THREE.Object3D | null>(null);
+  const surfaceRef = useRef<CarSurface | null>(null);
+  const sponsorLayerRef = useRef<DecalLayer | null>(null);
+  const draftLayerRef = useRef<DecalLayer | null>(null);
   const pinsGroupRef = useRef<THREE.Group | null>(null);
-  const draftDecalGroupRef = useRef<THREE.Group | null>(null);
+  const [isSurfaceReady, setIsSurfaceReady] = useState<boolean>(false);
 
   // Camera Orbit Controls State
   const isDraggingRef = useRef<boolean>(false);
@@ -220,12 +223,13 @@ export const PorscheScene: React.FC = () => {
     ringMesh.position.y = 0.004;
     scene.add(ringMesh);
 
-    // Decals container group
-    const decalsGroup = new THREE.Group();
-    decalsGroup.name = 'sponsors_decals_group';
-    decalsGroup.renderOrder = 100;
-    scene.add(decalsGroup);
-    decalsGroupRef.current = decalsGroup;
+    // Sponsor decals already sold, and the sticker being placed right now.
+    const sponsorLayer = new DecalLayer('sponsors_decals_group');
+    const draftLayer = new DecalLayer('draft_decal_group');
+    scene.add(sponsorLayer.group);
+    scene.add(draftLayer.group);
+    sponsorLayerRef.current = sponsorLayer;
+    draftLayerRef.current = draftLayer;
 
     // Hotspot Pins container group
     const pinsGroup = new THREE.Group();
@@ -234,45 +238,27 @@ export const PorscheScene: React.FC = () => {
     scene.add(pinsGroup);
     pinsGroupRef.current = pinsGroup;
 
-    // Draft placement group
-    const draftGroup = new THREE.Group();
-    draftGroup.renderOrder = 100;
-    scene.add(draftGroup);
-    draftDecalGroupRef.current = draftGroup;
+    const attachCar = (group: THREE.Object3D) => {
+      if (carGroupRef.current) scene.remove(carGroupRef.current);
+      scene.add(group);
+      carGroupRef.current = group;
+
+      const surface = CarSurface.fromObject(group);
+      surfaceRef.current = surface;
+      sponsorLayer.setSurface(surface);
+      draftLayer.setSurface(surface);
+
+      setIsLoadingModel(false);
+      setIsSurfaceReady(true);
+    };
 
     // Load Real Porsche 911 (992)
     setIsLoadingModel(true);
     loadRealPorscheModel('/models/porsche-911.glb', carConfig)
-      .then(({ group, paintMeshes, wheelMeshes }) => {
-        if (carGroupRef.current) scene.remove(carGroupRef.current);
-        scene.add(group);
-        carGroupRef.current = group;
-        paintMeshesRef.current = (paintMeshes || []).filter((m) => !isMeshForbidden(m));
-        if (paintMeshesRef.current.length === 0) {
-          const meshes: THREE.Mesh[] = [];
-          group.traverse((c) => {
-            if ((c as THREE.Mesh).isMesh && !isMeshForbidden(c as THREE.Mesh)) {
-              meshes.push(c as THREE.Mesh);
-            }
-          });
-          paintMeshesRef.current = meshes;
-        }
-        wheelMeshesRef.current = wheelMeshes;
-        setIsLoadingModel(false);
-      })
+      .then(({ group }) => attachCar(group))
       .catch((err) => {
         console.warn('Loading fallback procedural Porsche model', err);
-        const fallbackGroup = createPorscheCarGroup(carConfig);
-        scene.add(fallbackGroup);
-        carGroupRef.current = fallbackGroup;
-        const meshes: THREE.Mesh[] = [];
-        fallbackGroup.traverse((c) => {
-          if ((c as THREE.Mesh).isMesh && !isMeshForbidden(c as THREE.Mesh)) {
-            meshes.push(c as THREE.Mesh);
-          }
-        });
-        paintMeshesRef.current = meshes;
-        setIsLoadingModel(false);
+        attachCar(createPorscheCarGroup(carConfig));
       });
 
     // 7. Render Loop
@@ -339,165 +325,96 @@ export const PorscheScene: React.FC = () => {
     };
   }, [getCameraTargets]);
 
-  // Render Sponsor Decals onto Porsche Paint Panels using DecalGeometry
+  // Sponsor decals + their hotspot pins. The decal layer snaps every sticker onto
+  // the real sheet metal, so stored positions only need to be close to the panel.
   useEffect(() => {
-    const decalsGroup = decalsGroupRef.current;
+    const sponsorLayer = sponsorLayerRef.current;
     const pinsGroup = pinsGroupRef.current;
-    if (!decalsGroup || !pinsGroup || isLoadingModel || paintMeshesRef.current.length === 0) return;
+    if (!sponsorLayer || !pinsGroup || !isSurfaceReady) return;
 
-    while (decalsGroup.children.length > 0) {
-      decalsGroup.remove(decalsGroup.children[0]);
-    }
+    sponsorLayer.sync(
+      sponsors.map((sponsor) =>
+        sponsorToDecalItem(sponsor, {
+          state:
+            focusedSponsorId === sponsor.id || selectedSponsor?.id === sponsor.id
+              ? 'selected'
+              : hoveredSponsor?.id === sponsor.id
+                ? 'hover'
+                : 'normal',
+        })
+      )
+    );
 
     while (pinsGroup.children.length > 0) {
-      pinsGroup.remove(pinsGroup.children[0]);
+      const pin = pinsGroup.children[0] as THREE.Mesh;
+      pinsGroup.remove(pin);
+      pin.geometry?.dispose();
+      (pin.material as THREE.Material)?.dispose();
     }
-
-    const validPaintMeshes = paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
 
     sponsors.forEach((sponsor) => {
-      const isHovered = hoveredSponsor?.id === sponsor.id;
+      const placement = sponsorLayer.getPlacement(sponsor.id);
+      if (!placement) return;
+
       const isFocused = focusedSponsorId === sponsor.id || selectedSponsor?.id === sponsor.id;
+      const isHovered = hoveredSponsor?.id === sponsor.id;
 
-      const texture = createSponsorTexture(sponsor, isHovered, isFocused);
-      
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        depthTest: true,
-        depthWrite: false,
-        polygonOffset: true,
-        polygonOffsetFactor: -4,
-        polygonOffsetUnits: -4,
-        side: THREE.DoubleSide,
-      });
-
-      const pos = new THREE.Vector3(...sponsor.position3D);
-      const baseEuler = new THREE.Euler(...sponsor.rotation3D, 'YXZ');
-      const baseMatrix = new THREE.Matrix4().makeRotationFromEuler(baseEuler);
-
-      if (sponsor.rotationAngle) {
-        const normal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
-        const rotAngleRad = THREE.MathUtils.degToRad(sponsor.rotationAngle);
-        const rotMatrix = new THREE.Matrix4().makeRotationAxis(normal, rotAngleRad);
-        baseMatrix.premultiply(rotMatrix);
-      }
-
-      // Extract the exact outward normal of the decal plane
-      const outwardNormal = new THREE.Vector3(0, 0, 1).applyMatrix4(baseMatrix).normalize();
-      // Push the projection point 10mm outwards to guarantee it is NEVER buried inside the car mesh geometry!
-      const offsetPos = pos.clone().add(outwardNormal.multiplyScalar(0.01));
-
-      const finalEuler = new THREE.Euler().setFromRotationMatrix(baseMatrix, 'YXZ');
-      const scaleFactor = 0.028;
-      const w = (sponsor.widthCm || 35) * scaleFactor;
-      const h = (sponsor.heightCm || 20) * scaleFactor;
-      const size = new THREE.Vector3(w, h, 0.40);
-
-      const beforeCount = decalsGroup.children.length;
-      const nearbyMeshes = getNearbyPaintMeshes(validPaintMeshes, offsetPos, 0.50);
-
-      nearbyMeshes.forEach((mesh) => {
-        try {
-          const decalGeo = new DecalGeometry(mesh, offsetPos, finalEuler, size);
-          if (decalGeo.attributes.position && decalGeo.attributes.position.count > 0) {
-            const decalMesh = new THREE.Mesh(decalGeo, material);
-            decalMesh.renderOrder = 100;
-            decalMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
-            decalsGroup.add(decalMesh);
-          }
-        } catch (err) {
-          console.warn('Decal geometry projection warning', err);
-        }
-      });
-
-      // If DecalGeometry produced empty mesh, add resilient fallback plane
-      if (decalsGroup.children.length === beforeCount) {
-        const planeGeo = new THREE.PlaneGeometry(w, h);
-        const planeMesh = new THREE.Mesh(planeGeo, material);
-        planeMesh.position.copy(offsetPos);
-        planeMesh.rotation.copy(finalEuler);
-        planeMesh.renderOrder = 100;
-        planeMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
-        decalsGroup.add(planeMesh);
-      }
-
-      // Interactive Glowing Hotspot Pin
-      const pinGeo = new THREE.SphereGeometry(0.04, 16, 16);
-      const pinMat = new THREE.MeshBasicMaterial({
-        color: isFocused ? 0x00e5ff : isHovered ? 0xffffff : 0x10b981,
-      });
-      const pinMesh = new THREE.Mesh(pinGeo, pinMat);
-      pinMesh.position.set(
-        sponsor.position3D[0],
-        sponsor.position3D[1] + 0.04,
-        sponsor.position3D[2]
+      const pin = new THREE.Mesh(
+        new THREE.SphereGeometry(0.03, 16, 16),
+        new THREE.MeshBasicMaterial({
+          color: isFocused ? 0x00e5ff : isHovered ? 0xffffff : 0x10b981,
+          toneMapped: false,
+        })
       );
-      pinMesh.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
-      pinsGroup.add(pinMesh);
+      pin.position.copy(placement.point).addScaledVector(placement.normal, 0.02);
+      pin.userData = { sponsorId: sponsor.id, sponsorData: sponsor };
+      pinsGroup.add(pin);
     });
+  }, [sponsors, hoveredSponsor, focusedSponsorId, selectedSponsor, isSurfaceReady]);
 
-    // Render Draft placement ONLY if actively in placement mode
-    const draftGroup = draftDecalGroupRef.current;
-    if (draftGroup) {
-      while (draftGroup.children.length > 0) {
-        draftGroup.remove(draftGroup.children[0]);
-      }
+  // Sticker preview while the user is choosing a spot on the car.
+  useEffect(() => {
+    const draftLayer = draftLayerRef.current;
+    if (!draftLayer || !isSurfaceReady) return;
 
-      if (isPlacementMode && draftSponsor && draftSponsor.position3D) {
-        const overlap = detectSponsorOverlap(draftSponsor, sponsors);
-        const draftTex = createSponsorTexture(draftSponsor, true, true, undefined, overlap.occupiedMasks);
-        const draftMat = new THREE.MeshBasicMaterial({
-          map: draftTex,
-          transparent: true,
-          depthTest: true,
-          depthWrite: false,
-          polygonOffset: true,
-          polygonOffsetFactor: -4,
-          polygonOffsetUnits: -4,
-          side: THREE.DoubleSide,
-        });
-
-        const dPos = new THREE.Vector3(...draftSponsor.position3D);
-        const dEuler = new THREE.Euler(...(draftSponsor.rotation3D || [-1.22, 0, 0]), 'YXZ');
-        
-        const dBaseMatrix = new THREE.Matrix4().makeRotationFromEuler(dEuler);
-        const dOutwardNormal = new THREE.Vector3(0, 0, 1).applyMatrix4(dBaseMatrix).normalize();
-        const dOffsetPos = dPos.clone().add(dOutwardNormal.multiplyScalar(0.01));
-
-        const dw = (draftSponsor.widthCm || 35) * 0.028;
-        const dh = (draftSponsor.heightCm || 20) * 0.028;
-        const dSize = new THREE.Vector3(dw, dh, 0.40);
-
-        const beforeDraftCount = draftGroup.children.length;
-        const nearbyDraftMeshes = getNearbyPaintMeshes(validPaintMeshes, dOffsetPos, 0.50);
-
-        nearbyDraftMeshes.forEach((mesh) => {
-          try {
-            const dGeo = new DecalGeometry(mesh, dOffsetPos, dEuler, dSize);
-            if (dGeo.attributes.position && dGeo.attributes.position.count > 0) {
-              const dMesh = new THREE.Mesh(dGeo, draftMat);
-              dMesh.renderOrder = 100;
-              draftGroup.add(dMesh);
-            }
-          } catch {
-            // ignore
-          }
-        });
-
-        if (draftGroup.children.length === beforeDraftCount) {
-          const planeGeo = new THREE.PlaneGeometry(dw, dh);
-          const planeMesh = new THREE.Mesh(planeGeo, draftMat);
-          planeMesh.position.copy(dOffsetPos);
-          planeMesh.rotation.copy(dEuler);
-          planeMesh.renderOrder = 100;
-          draftGroup.add(planeMesh);
-        }
-      }
+    if (!isPlacementMode || !draftSponsor || !draftSponsor.position3D) {
+      draftLayer.sync([]);
+      return;
     }
-  }, [sponsors, hoveredSponsor, focusedSponsorId, selectedSponsor, draftSponsor, isPlacementMode, isLoadingModel]);
+
+    const overlap = detectSponsorOverlap(draftSponsor, sponsors);
+    draftLayer.sync([
+      sponsorToDecalItem(draftSponsor, {
+        id: 'draft',
+        state: overlap.hasOverlap ? 'blocked' : 'draft',
+        cutouts: overlap.occupiedMasks,
+      }),
+    ]);
+  }, [draftSponsor, isPlacementMode, sponsors, isSurfaceReady]);
 
   // Pointer Handlers
+  /** Front-most sponsor under the pointer: its decal first, then its hotspot pin. */
+  const pickSponsorAt = (ndcX: number, ndcY: number): Sponsor | null => {
+    const camera = cameraRef.current;
+    if (!camera) return null;
+
+    const ndc = new THREE.Vector2(ndcX, ndcY);
+
+    const decalHit = sponsorLayerRef.current?.pick(ndc, camera);
+    if (decalHit?.payload) return decalHit.payload as Sponsor;
+
+    const pinsGroup = pinsGroupRef.current;
+    if (pinsGroup) {
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObjects(pinsGroup.children, false);
+      const sponsor = hits[0]?.object.userData?.sponsorData as Sponsor | undefined;
+      if (sponsor) return sponsor;
+    }
+
+    return null;
+  };
+
   const handlePointerDown = (e: React.PointerEvent) => {
     isDraggingRef.current = true;
     previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
@@ -535,34 +452,17 @@ export const PorscheScene: React.FC = () => {
       return;
     }
 
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
+    const sponsor = pickSponsorAt(mouseX, mouseY);
 
-    const hitTargets: THREE.Object3D[] = [];
-    if (decalsGroupRef.current) hitTargets.push(...decalsGroupRef.current.children);
-    if (pinsGroupRef.current) hitTargets.push(...pinsGroupRef.current.children);
-
-    if (hitTargets.length > 0) {
-      const intersects = raycaster.intersectObjects(hitTargets, true);
-      
-      if (intersects.length > 0) {
-        let hitObject: THREE.Object3D | null = intersects[0].object;
-        while (hitObject && !hitObject.userData?.sponsorData && hitObject.parent) {
-          hitObject = hitObject.parent;
-        }
-
-        if (hitObject?.userData?.sponsorData) {
-          const sponsor: Sponsor = hitObject.userData.sponsorData;
-          setHoveredSponsor(sponsor);
-          setActiveTooltip({
-            sponsor,
-            screenX: e.clientX - rect.left,
-            screenY: e.clientY - rect.top,
-          });
-          containerRef.current.style.cursor = 'pointer';
-          return;
-        }
-      }
+    if (sponsor) {
+      setHoveredSponsor(sponsor);
+      setActiveTooltip({
+        sponsor,
+        screenX: e.clientX - rect.left,
+        screenY: e.clientY - rect.top,
+      });
+      containerRef.current.style.cursor = 'pointer';
+      return;
     }
 
     setHoveredSponsor(null);
@@ -575,79 +475,50 @@ export const PorscheScene: React.FC = () => {
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!containerRef.current || !cameraRef.current || !sceneRef.current) return;
+    if (!containerRef.current || !cameraRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
-
-    // If clicking a sponsor decal/hotspot pin
-    const hitTargets: THREE.Object3D[] = [];
-    if (decalsGroupRef.current) hitTargets.push(...decalsGroupRef.current.children);
-    if (pinsGroupRef.current) hitTargets.push(...pinsGroupRef.current.children);
-
-    if (hitTargets.length > 0 && !isPlacementMode) {
-      const intersects = raycaster.intersectObjects(hitTargets, true);
-      if (intersects.length > 0) {
-        let hitObject: THREE.Object3D | null = intersects[0].object;
-        while (hitObject && !hitObject.userData?.sponsorData && hitObject.parent) {
-          hitObject = hitObject.parent;
-        }
-
-        if (hitObject?.userData?.sponsorData) {
-          const sponsor: Sponsor = hitObject.userData.sponsorData;
-          setSelectedSponsor(sponsor);
-          recordClick(sponsor.id);
-          return;
-        }
+    // Opening an existing sponsor
+    if (!isPlacementMode) {
+      const sponsor = pickSponsorAt(mouseX, mouseY);
+      if (sponsor) {
+        setSelectedSponsor(sponsor);
+        recordClick(sponsor.id);
       }
+      return;
     }
 
-    // In placement mode: raycast onto Porsche body panels
-    if (isPlacementMode && paintMeshesRef.current.length > 0) {
-      const validPaintMeshes = paintMeshesRef.current.filter((m) => !isMeshForbidden(m));
-      const intersects = raycaster.intersectObjects(validPaintMeshes, true);
+    // Placement mode: drop the sticker exactly where the body was clicked.
+    const surface = surfaceRef.current;
+    if (!surface) return;
 
-      if (intersects.length > 0) {
-        const hit = intersects[0];
-        const point = hit.point;
+    const hit = surface.raycast(new THREE.Vector2(mouseX, mouseY), cameraRef.current);
+    if (!hit) return;
 
-        let tier: any = 'body_standard';
-        let zoneName = 'Carrocería & Salpicadera';
-        let rot: [number, number, number] = [-1.22, 0, 0];
+    const widthCm = draftSponsor?.widthCm || 35;
+    const heightCm = draftSponsor?.heightCm || 20;
+    const zone = surface.zonesUnder(hit, draftSponsor?.rotationAngle || 0, widthCm, heightCm);
 
-        if (point.z < -1.02 && point.y > 0.72) {
-          tier = 'rear_decklid';
-          zoneName = 'Tapa de Motor & Fascia Trasera (VIP)';
-          rot = [-1.67, 0, 0];
-        } else if (point.z > 0.65 && point.y > 0.5) {
-          tier = 'hood_central';
-          zoneName = 'Cofre Aerodinámico Central';
-          rot = [-1.22, 0, 0];
-        } else if (Math.abs(point.x) > 0.6) {
-          tier = 'premium_door';
-          zoneName = point.x > 0 ? 'Puerta Lateral Derecha' : 'Puerta Lateral Izquierda';
-          rot = [0, point.x > 0 ? 1.57 : -1.57, 0];
-        }
+    setDraftSponsor((prev) => ({
+      ...prev,
+      position3D: [
+        Number(hit.point.x.toFixed(4)),
+        Number(hit.point.y.toFixed(4)),
+        Number(hit.point.z.toFixed(4)),
+      ],
+      rotation3D: orientationToEuler(hit.normal, 0, surface.readsFromRear(hit.point)),
+      widthCm,
+      heightCm,
+      tier: zone.tier,
+      zoneName: zone.name,
+      pricePerCm2: zone.pricePerCm2,
+    }));
 
-        setDraftSponsor((prev) => ({
-          ...prev,
-          position3D: [Number(point.x.toFixed(2)), Number(point.y.toFixed(2)), Number(point.z.toFixed(2))],
-          rotation3D: rot,
-          widthCm: prev?.widthCm || 35,
-          heightCm: prev?.heightCm || 20,
-          tier,
-          zoneName,
-          pricePerCm2: tier === 'rear_decklid' ? 40 : tier === 'hood_central' ? 35 : tier === 'premium_door' ? 25 : 20,
-        }));
-
-        setIsPlacementMode(false);
-        setIsBuyModalOpen(true);
-      }
-    }
+    setIsPlacementMode(false);
+    setIsBuyModalOpen(true);
   };
 
   return (

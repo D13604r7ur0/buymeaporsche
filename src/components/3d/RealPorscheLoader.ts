@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { CAR_LENGTH_WORLD } from './decals/scale';
+import { describeCarMesh } from './decals/carSurface';
 import type { CarCustomization } from '../../context/SponsorContext';
 
 export interface LoadedCarResult {
@@ -90,7 +92,7 @@ export const loadRealPorscheModel = (
         const center = box.getCenter(new THREE.Vector3());
 
         const maxDim = Math.max(size.x, size.y, size.z);
-        const targetScale = 4.4 / (maxDim || 1);
+        const targetScale = CAR_LENGTH_WORLD / (maxDim || 1);
         carRoot.scale.setScalar(targetScale);
 
         // Center on ground
@@ -98,88 +100,46 @@ export const loadRealPorscheModel = (
         carRoot.position.y = -box.min.y * targetScale;
         carRoot.position.z = -center.z * targetScale;
 
-        // Traverse & apply phantom crystal materials
         carRoot.traverse((child) => {
-          if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            mesh.castShadow = false;
-            mesh.receiveShadow = false;
+          const mesh = child as THREE.Mesh;
+          if (!mesh.isMesh) return;
 
-            const name = mesh.name.toLowerCase();
-            const matName = (Array.isArray(mesh.material) ? mesh.material[0]?.name : mesh.material?.name)?.toLowerCase() || '';
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
 
-            if (
-              name.includes('glass') ||
-              name.includes('window') ||
-              name.includes('windshield') ||
-              name.includes('windscreen') ||
-              name.includes('cristal') ||
-              name.includes('vidrio') ||
-              name.includes('light') ||
-              name.includes('headlight') ||
-              name.includes('taillight') ||
-              name.includes('lamp') ||
-              name.includes('faro') ||
-              name.includes('calavera') ||
-              name.includes('lens') ||
-              name.includes('reflector') ||
-              name.includes('signal') ||
-              name.includes('turn') ||
-              name.includes('indicator') ||
-              name.includes('led') ||
-              name.includes('fog') ||
-              name.includes('stop') ||
-              name.includes('drl') ||
-              name.includes('optic') ||
-              matName.includes('glass') ||
-              matName.includes('window') ||
-              matName.includes('windshield') ||
-              matName.includes('lights') ||
-              matName.includes('light') ||
-              matName.includes('lamp') ||
-              matName.includes('lens')
-            ) {
+          // The GLB names every mesh `Object_N`; the descriptive information lives
+          // in the material name, which is about to be replaced. Keep a copy so the
+          // decal system can still tell a door from a windshield.
+          const sourceMaterialName = Array.isArray(mesh.material)
+            ? mesh.material[0]?.name || ''
+            : mesh.material?.name || '';
+          mesh.userData.sourceMaterialName = sourceMaterialName;
+
+          // Decal projection needs vertex normals.
+          if (!mesh.geometry.attributes.normal) mesh.geometry.computeVertexNormals();
+
+          const { kind } = describeCarMesh(mesh);
+
+          switch (kind) {
+            case 'glass':
+            case 'light':
               mesh.material = silhouetteGlassMaterial;
-            } else if (
-              name.includes('wheel') ||
-              name.includes('rim') ||
-              name.includes('tire') ||
-              name.includes('tyre') ||
-              name.includes('brake') ||
-              name.includes('caliper') ||
-              name.includes('disc') ||
-              name.includes('rotor') ||
-              name.includes('hub') ||
-              name.includes('rueda') ||
-              name.includes('llanta') ||
-              name.includes('rin') ||
-              matName.includes('wheel') ||
-              matName.includes('rim') ||
-              matName.includes('tire') ||
-              matName.includes('tyre') ||
-              matName.includes('brake')
-            ) {
+              break;
+            case 'wheel':
               mesh.material = silhouetteWheelMaterial;
               wheelMeshes.push(mesh);
-            } else if (
-              name.includes('carbon') ||
-              name.includes('trim') ||
-              name.includes('splitter') ||
-              name.includes('mirror') ||
-              name.includes('interior') ||
-              name.includes('seat') ||
-              name.includes('steering') ||
-              name.includes('chassis') ||
-              name.includes('engine')
-            ) {
-              mesh.material = silhouetteTrimMaterial;
-            } else {
-              // Body Panels ONLY (Cofre, Puertas, Salpicaderas, Techo, Fascias)
+              break;
+            case 'paint':
               mesh.material = silhouetteBodyMaterial;
               paintMeshes.push(mesh);
-            }
+              break;
+            default:
+              mesh.material = silhouetteTrimMaterial;
+              break;
           }
         });
+
+        carRoot.updateWorldMatrix(true, true);
 
         resolve({ group: carRoot, paintMeshes, wheelMeshes });
       },

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import * as THREE from 'three';
 import confetti from 'canvas-confetti';
 import { useSponsors } from '../../context/SponsorContext';
 import type { SponsorTier } from '../../types/sponsor';
 import { CONTRACT_YEARS } from '../../utils/sampleData';
 import { generateFallbackLogo } from '../../utils/brandLogos';
 import { sounds } from '../../utils/soundEffects';
-import { Studio3DCanvas } from '../3d/Studio3DCanvas';
+import { Studio3DCanvas, type StudioView } from '../3d/Studio3DCanvas';
+import { ZONE_PRICING, cmToWorld, decalAxes, eulerToNormal } from '../3d/decals';
 import { TermsModal } from './TermsModal';
 import { 
   detectSponsorOverlap, 
@@ -75,7 +77,14 @@ export const BuyModal: React.FC = () => {
   const [targetUrl, setTargetUrl] = useState<string>(draftSponsor?.targetUrl || '');
   const email = draftSponsor?.email || 'contacto@sponsor.com';
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(draftSponsor?.logoUrl || '');
-  const [cameraViewTrigger, setCameraViewTrigger] = useState<string>('hood');
+  // A zone request both flies the studio camera to a panel and drops the sticker
+  // on it. The counter lets the same panel be requested twice in a row.
+  const [zoneRequest, setZoneRequest] = useState<{ view?: StudioView; seq: number }>({
+    view: 'hood',
+    seq: 0,
+  });
+  const requestZone = (view?: StudioView) =>
+    setZoneRequest((prev) => ({ view, seq: prev.seq + 1 }));
   const [interactMode, setInteractMode] = useState<'moveLogo' | 'orbitCamera'>('moveLogo');
 
   // 3D positioning state
@@ -154,8 +163,11 @@ export const BuyModal: React.FC = () => {
       setPricePerCm2(draftSponsor.pricePerCm2 || 45);
       setCurrentZoneName(draftSponsor.zoneName || 'Cofre Central Frontal');
       setSelectedTier(draftSponsor.tier || 'hood_central');
-      setCurrentPosition3D(draftSponsor.position3D || [0, 0.96, 1.2]);
-      setCurrentRotation3D(draftSponsor.rotation3D || [-1.25, 0, 0]);
+      setCurrentPosition3D(draftSponsor.position3D || [0, 0.86, 1.35]);
+      setCurrentRotation3D(draftSponsor.rotation3D || [0, 0, 0]);
+
+      // Placed from the hero scene already? Respect it. Otherwise start on the hood.
+      requestZone(draftSponsor.position3D ? undefined : 'hood');
     }
   }, [isBuyModalOpen]);
 
@@ -256,54 +268,40 @@ export const BuyModal: React.FC = () => {
   };
 
   // Micro Nudge Position (D-Pad Arrows)
+  // Moves along the sticker's own axes on the panel; the 3D layer re-snaps the
+  // result onto the sheet metal, so the logo follows the curvature of the body.
   const handleNudge = (dir: 'up' | 'down' | 'left' | 'right') => {
     sounds.playClickSound();
-    const stepSize = 0.04;
-    setCurrentPosition3D((prev) => {
-      const next: [number, number, number] = [...prev];
-      if (dir === 'up') next[1] += stepSize;
-      if (dir === 'down') next[1] -= stepSize;
-      if (dir === 'left') {
-        if (Math.abs(prev[0]) > 0.5) next[2] -= stepSize;
-        else next[0] -= stepSize;
-      }
-      if (dir === 'right') {
-        if (Math.abs(prev[0]) > 0.5) next[2] += stepSize;
-        else next[0] += stepSize;
-      }
-      return next;
-    });
+
+    const normal = eulerToNormal(currentRotation3D) ?? new THREE.Vector3(0, 1, 0);
+    const { right, up } = decalAxes(normal, rotationAngle);
+    const step = cmToWorld(2);
+
+    const delta = new THREE.Vector3();
+    if (dir === 'up') delta.addScaledVector(up, step);
+    if (dir === 'down') delta.addScaledVector(up, -step);
+    if (dir === 'right') delta.addScaledVector(right, step);
+    if (dir === 'left') delta.addScaledVector(right, -step);
+
+    setCurrentPosition3D((prev) => [prev[0] + delta.x, prev[1] + delta.y, prev[2] + delta.z]);
   };
 
   // Mirror to Opposite Door
   const handleMirrorOppositeDoor = () => {
     sounds.playClickSound();
-    setCurrentPosition3D((prev) => [-prev[0], prev[1], prev[2]]);
-    setCurrentRotation3D((prev) => [prev[0], -prev[1], prev[2]]);
-    setCameraViewTrigger(currentPosition3D[0] > 0 ? 'leftDoor' : 'rightDoor');
-    setCurrentZoneName(currentPosition3D[0] > 0 ? 'Puerta Izquierda' : 'Puerta Derecha');
+    requestZone(currentPosition3D[0] > 0 ? 'leftDoor' : 'rightDoor');
   };
 
   // Center in Current Zone
   const handleCenterInZone = () => {
     sounds.playClickSound();
-    if (selectedTier === 'rear_decklid' || selectedTier === 'vip_wing') {
-      setCurrentPosition3D([0, 0.98, -1.35]);
-      setCurrentRotation3D([0.15, 0, 0]);
-    } else if (selectedTier === 'hood_central') {
-      setCurrentPosition3D([0, 0.96, 1.2]);
-      setCurrentRotation3D([-1.25, 0, 0]);
-    } else if (selectedTier === 'premium_door') {
-      const isRight = currentPosition3D[0] >= 0;
-      setCurrentPosition3D([isRight ? 1.02 : -1.02, 0.58, 0.15]);
-      setCurrentRotation3D([0, isRight ? Math.PI / 2 : -Math.PI / 2, 0]);
-    } else if (currentZoneName.includes('Techo')) {
-      setCurrentPosition3D([0, 1.34, -0.1]);
-      setCurrentRotation3D([-Math.PI / 2, 0, 0]);
-    } else {
-      setCurrentPosition3D([0, 0.45, -1.9]);
-      setCurrentRotation3D([0, Math.PI, 0]);
-    }
+
+    if (selectedTier === 'rear_decklid' || selectedTier === 'vip_wing') requestZone('wing');
+    else if (selectedTier === 'hood_central') requestZone('hood');
+    else if (selectedTier === 'premium_door') {
+      requestZone(currentPosition3D[0] >= 0 ? 'rightDoor' : 'leftDoor');
+    } else if (currentZoneName.includes('Techo')) requestZone('roof');
+    else requestZone('rear');
   };
 
   const handleUpdateFrom3D = (update: {
@@ -463,7 +461,8 @@ export const BuyModal: React.FC = () => {
             rotationAngle={rotationAngle}
             onUpdateRotationAngle={setRotationAngle}
             existingSponsors={sponsors}
-            cameraViewTrigger={cameraViewTrigger}
+            cameraViewTrigger={zoneRequest.view}
+            zoneRequestSeq={zoneRequest.seq}
             interactMode={interactMode}
             onToggleInteractMode={setInteractMode}
           />
@@ -807,114 +806,84 @@ export const BuyModal: React.FC = () => {
                     type="button"
                     onClick={() => {
                       sounds.playClickSound();
-                      setCameraViewTrigger('hood');
-                      setCurrentPosition3D([0, 0.96, 1.2]);
-                      setCurrentRotation3D([-1.25, 0, 0]);
-                      setSelectedTier('hood_central');
-                      setCurrentZoneName('Cofre Central Frontal');
-                      setPricePerCm2(35);
+                      requestZone('hood');
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'hood_central' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🔰 Cofre</div>
-                    <div className={`text-[10px] ${selectedTier === 'hood_central' ? 'text-neutral-400' : 'text-neutral-500'}`}>$35 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'hood_central' ? 'text-neutral-400' : 'text-neutral-500'}`}>${ZONE_PRICING.hood.pricePerCm2} MXN/cm²</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       sounds.playClickSound();
-                      setCameraViewTrigger('wing');
-                      setCurrentPosition3D([0, 0.98, -1.35]);
-                      setCurrentRotation3D([0.15, 0, 0]);
-                      setSelectedTier('rear_decklid');
-                      setCurrentZoneName('Tapa de Motor & Fascia Trasera');
-                      setPricePerCm2(40);
+                      requestZone('wing');
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🏁 Tapa Trasera</div>
-                    <div className={`text-[10px] ${selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>$40 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'rear_decklid' || selectedTier === 'vip_wing' ? 'text-neutral-400' : 'text-neutral-500'}`}>${ZONE_PRICING.decklid.pricePerCm2} MXN/cm²</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       sounds.playClickSound();
-                      setCameraViewTrigger('leftDoor');
-                      setCurrentPosition3D([-1.02, 0.58, 0.15]);
-                      setCurrentRotation3D([0, -Math.PI / 2, 0]);
-                      setSelectedTier('premium_door');
-                      setCurrentZoneName('Puerta Izquierda');
-                      setPricePerCm2(25);
+                      requestZone('leftDoor');
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🚪 Puerta Izq</div>
-                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] < 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>${ZONE_PRICING.door_left.pricePerCm2} MXN/cm²</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       sounds.playClickSound();
-                      setCameraViewTrigger('rightDoor');
-                      setCurrentPosition3D([1.02, 0.58, 0.15]);
-                      setCurrentRotation3D([0, Math.PI / 2, 0]);
-                      setSelectedTier('premium_door');
-                      setCurrentZoneName('Puerta Derecha');
-                      setPricePerCm2(25);
+                      requestZone('rightDoor');
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🚪 Puerta Der</div>
-                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
+                    <div className={`text-[10px] ${selectedTier === 'premium_door' && currentPosition3D[0] > 0 ? 'text-neutral-400' : 'text-neutral-500'}`}>${ZONE_PRICING.door_right.pricePerCm2} MXN/cm²</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       sounds.playClickSound();
-                      setCameraViewTrigger('roof');
-                      setCurrentPosition3D([0, 1.34, -0.1]);
-                      setCurrentRotation3D([-Math.PI / 2, 0, 0]);
-                      setSelectedTier('body_standard');
-                      setCurrentZoneName('Techo Panorámico');
-                      setPricePerCm2(25);
+                      requestZone('roof');
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       currentZoneName.includes('Techo') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🔲 Techo</div>
-                    <div className={`text-[10px] ${currentZoneName.includes('Techo') ? 'text-neutral-400' : 'text-neutral-500'}`}>$25 MXN/cm²</div>
+                    <div className={`text-[10px] ${currentZoneName.includes('Techo') ? 'text-neutral-400' : 'text-neutral-500'}`}>${ZONE_PRICING.roof.pricePerCm2} MXN/cm²</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       sounds.playClickSound();
-                      setCameraViewTrigger('rear');
-                      setCurrentPosition3D([0, 0.45, -1.9]);
-                      setCurrentRotation3D([0, Math.PI, 0]);
-                      setSelectedTier('body_standard');
-                      setCurrentZoneName('Defensa Trasera');
-                      setPricePerCm2(15);
+                      requestZone('rear');
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-mono text-left transition cursor-pointer ${
                       currentZoneName.includes('Defensa') ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs' : 'bg-[#fafafa] text-neutral-700 border-black/[0.08] hover:border-black/20'
                     }`}
                   >
                     <div className="font-semibold text-[11px]">🏎️ Trasera</div>
-                    <div className={`text-[10px] ${currentZoneName.includes('Defensa') ? 'text-neutral-400' : 'text-neutral-500'}`}>$15 MXN/cm²</div>
+                    <div className={`text-[10px] ${currentZoneName.includes('Defensa') ? 'text-neutral-400' : 'text-neutral-500'}`}>${ZONE_PRICING.rear_bumper.pricePerCm2} MXN/cm²</div>
                   </button>
                 </div>
               </div>
